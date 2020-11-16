@@ -1,5 +1,7 @@
 from edge import Edge
 from copy import deepcopy 
+import unittest
+
 class Architecture:
     def __init__(self, num_levels, num_nodes_at_level, base_operators):
 
@@ -47,5 +49,9 @@ class Architecture:
         # updates the operators as well
         raise NotImplementedError()
 
+class TestArchitecture(unittest.TestCase):
+    def test_dummy(self):
+        assert(True)
 
-
+if __name__ == '__main__':
+    unittest.main()
