@@ -7,7 +7,7 @@ class Architecture:
         self.base_operation = base_operations
         self.initialize()
 
-    def initialize(self): #TODO: Must be generalized for any number of levels
+    def initialize(self): #TODO: Must be generalized for any number of levels - JUST MAKE IT RECURSIVE
         # Loop through all possible edges for dag at level 2
         for level_2_node_a in range(self.num_nodes_at_level[2]):
             for level_2_node_b in range(level_2_node_a + 1, self.num_nodes_at_level[2]):
