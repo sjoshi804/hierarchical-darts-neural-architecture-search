@@ -1,0 +1,3 @@
+# TRAINING THE WEIGHTS OF THE NEURAL NETWORK
+class OmegaTrainer:
+    pass

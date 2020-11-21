@@ -9,20 +9,15 @@ import numpy as np
 from util import addArgs, timer
 import util
 
-"""
-Tutorial is from https://towardsdatascience.com/training-neural-network-from-scratch-using-pytorch-in-just-7-cells-e6e904070a1d
-"""
+class HDARTS:
 
-
-
-class Train:
-
+  # Constructor - initializes data loader
   def __init__(self):
-    trainloader = self.transformImagesToTensors()
-    model = self.createNetwork(trainloader)
+    self.dataloader = self.transformImagesToTensors()
+    self.model = self.createNetwork(trainloader)
 
     #Leon return model criterion and optimizer and when training, time that
-    self.trainNetwork(trainloader=trainloader, model=model)
+    self.trainNetwork(trainloader=self.dataloader, model=self.model)
     #self.showPrediction(trainloader=trainloader, model=model)
 
 
@@ -148,6 +143,6 @@ def view_classify(img, ps):
   plt.show()
 
 if __name__ == "__main__":
-  trainer = Train()
+  neuralArchitectureSearcher = HDARTS()
 
 
