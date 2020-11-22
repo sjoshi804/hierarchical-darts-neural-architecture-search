@@ -3,7 +3,6 @@ import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
 from torch import optim
 import numpy as np
 from util import addArgs, timer
@@ -13,12 +12,23 @@ class HDARTS:
 
   # Constructor - initializes data loader
   def __init__(self):
-    self.dataloader = self.transformImagesToTensors()
-    self.model = self.createNetwork(trainloader)
+    self.runMNISTTraining()
+
+
+  """
+  Description: Runs MNIST training and prediction
+    Args:
+      self: instance of class
+    Returns: 
+  """
+  def runMNISTTraining(self):
+    self.dataloaderMNIST = self.transformImagesToTensors()
+    self.modelMNIST = self.createModel(self.dataloaderMNIST)
 
     #Leon return model criterion and optimizer and when training, time that
-    self.trainNetwork(trainloader=self.dataloader, model=self.model)
-    #self.showPrediction(trainloader=trainloader, model=model)
+    self.trainNetwork(trainloader=self.dataloaderMNIST, model=self.modelMNIST)
+    util.showPrediction(trainloader=self.dataloaderMNIST, model=self.modelMNIST)
+
 
 
   """
@@ -53,7 +63,7 @@ class HDARTS:
     Returns: 
 
   """
-  def createNetwork(self, trainloader):
+  def createModel(self, trainloader):
     #print(trainloader.dataset.data.shape)#Will give 64, 1, 28, 28
     #This means we have 64 images, 1 channel(greyscale images), 28 x 28 dimension picture
 
@@ -73,6 +83,34 @@ class HDARTS:
       nn.LogSoftmax(dim=1)
     )
     return model
+
+  """
+  Description: Downloads CIFAR10 and stores it in './data' and
+    if you already have it it just loads it
+  Args: 
+
+  Returns:
+    trainloader: 
+    testloader:
+  """
+  def transformImagesToTensorsCIFAR10():
+    transform = transforms.Compose([
+      transforms.ToTensor(),
+      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+      download=True, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+      shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+      download=True, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=4,
+      shuffle=False, num_workers=2)
+
+
+    return trainloader, testloader
 
   """
     Description:
@@ -110,37 +148,7 @@ class HDARTS:
       else: 
         print('Training loss: ', (running_loss/len(trainloader)))
 
-  """
 
-  """
-  def showPrediction(self, trainloader, model): 
-    # Getting the image to test
-    images, labels = next(iter(trainloader))
-    # Flatten the image to pass in the model
-    img = images[1].view(1, 784)
-    # Turn off gradients to speed up this part
-    with torch.no_grad():
-        logps = model(img)
-    # Output of the network are log-probabilities, need to take exponential for probabilities
-    ps = torch.exp(logps)
-    view_classify(img, ps)
-
-
-
-  
-def view_classify(img, ps):
-  ps = ps.data.numpy().squeeze()
-  fig, (ax1, ax2) = plt.subplots(figsize=(6,9), ncols=2)
-  ax1.imshow(img.resize_(1, 28, 28).numpy().squeeze())
-  ax1.axis('off')
-  ax2.barh(np.arange(10), ps)
-  ax2.set_aspect(0.1)
-  ax2.set_yticks(np.arange(10))
-  ax2.set_yticklabels(np.arange(10))
-  ax2.set_title('Class Probability')
-  ax2.set_xlim(0, 1.1)
-  plt.tight_layout()
-  plt.show()
 
 if __name__ == "__main__":
   neuralArchitectureSearcher = HDARTS()
