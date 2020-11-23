@@ -1,6 +1,69 @@
 import torch
 import torch.nn as nn
 
+'''
+Input: (N, C_in, H_in, W_in)
+Output: (N, C_out, H_out, W_out)
+
+N is the number of samples in a batch
+C is the number of channels - in the case of color images this is RGB
+H_in, W_in - dimensions of the 2d matrix for a given channel (also called feature)
+H_out, W_out are determined by stride and H_in, W_in
+
+For our case here, we want to preserve the channels in all these operations, 
+therefore C_in = C_out always and hence the only parameter for channels is C
+
+Stride determines at what stride we will look at H_in, W_in
+
+Affine: Matrix multiplication of input and weights - Ask Professor?
+
+Useful Links:
+- https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+- https://datascience.stackexchange.com/questions/13405/what-is-affine-transformation-in-regards-to-neural-networks
+
+
+Question for Professor: Is there a dimensionality issue?
+'''
+SIMPLE_OPS = {
+  'none' : lambda C, stride, affine: Zero(stride),
+  'identity': lambda C, stride, affine: Identity(stride),
+  'double': lambda C, stride, affine: Double(stride)
+}
+
+class Zero(nn.Module):
+
+  def __init__(self, stride):
+    super(Zero, self).__init__()
+    self.stride = stride
+
+  def forward(self, x):
+    if self.stride == 1:
+      return x.mul(0.)
+    return x[:,:,::self.stride,::self.stride].mul(0.)
+
+class Identity(nn.Module):
+
+  def __init__(self, stride):
+    super(Identity, self).__init__()
+    self.stride = stride
+
+  def forward(self, x):
+    if self.stride == 1:
+      return x
+    return x[:,:,::self.stride,::self.stride]
+
+class Double(nn.Module):
+
+  def __init__(self, stride):
+    super(Double, self).__init__()
+    self.stride = stride
+
+  def forward(self, x):
+    if self.stride == 1:
+      return x.mul(2.)
+    return x[:,:,::self.stride,::self.stride].mul(2.)
+
+'''
 OPS = {
   'none' : lambda C, stride, affine: Zero(stride),
   'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
@@ -74,19 +137,6 @@ class Identity(nn.Module):
   def forward(self, x):
     return x
 
-
-class Zero(nn.Module):
-
-  def __init__(self, stride):
-    super(Zero, self).__init__()
-    self.stride = stride
-
-  def forward(self, x):
-    if self.stride == 1:
-      return x.mul(0.)
-    return x[:,:,::self.stride,::self.stride].mul(0.)
-
-
 class FactorizedReduce(nn.Module):
 
   def __init__(self, C_in, C_out, affine=True):
@@ -103,3 +153,4 @@ class FactorizedReduce(nn.Module):
     out = self.bn(out)
     return out
 
+'''
