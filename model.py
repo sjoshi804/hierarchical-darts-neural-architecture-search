@@ -127,11 +127,11 @@ class Model(nn.module):
     
     # Construct top-most level i.e. final architecture
     # Dict from edge tuple to MixedOperation on that edge
-    self.top_level_ops = {}
+    self.top_level_ops = nn.ModuleDict()
     for node_a in range(0, alpha.num_nodes_at_level[alpha.num_levels - 1]):
       for node_b in range(node_a + 1, alpha.num_nodes_at_level[alpha.num_levels - 1]):
         edge = (node_a, node_b)
-        self.top_level_ops[edge] = MixedOperation(self._ops_at_level[alpha.num_levels - 1], alpha.parameters[alpha.num_levels - 1][0][edge], channels_in)
+        self.top_level_ops[str(edge)] = MixedOperation(self._ops_at_level[alpha.num_levels - 1], alpha.parameters[alpha.num_levels - 1][0][edge], channels_in)
         # FIXME: Channels probably wrong and stride left to default
 
 
@@ -148,7 +148,7 @@ class Model(nn.module):
     for node_a in range(0, ):
       for node_b in range(node_a + 1, num_nodes):
         # For a given edge, determine the input to the starting node
-        edge = (node_a, node_b)
+        edge = str((node_a, node_b))
         if (node_a == 0): # for node_a = 0, it is trivial, input of entire module
           input = x
         else: # otherwise it is the concatentation of the output of every edge (node, node_a)
@@ -156,7 +156,7 @@ class Model(nn.module):
           for prev_node in range(0, node_a):
             input += output[(prev_node, node_a)]
           input = cat(tuple(input), dim=0) # TODO: Confirm that concatenation along features is what is desired.
-        output[edge] = self._ops[str(edge)].forward(input)
+        output[edge] = self.top_level_ops[str(edge)].forward(input)
     
     # Let the final output be the concatenation of all inputs to the final node
     # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
