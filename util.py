@@ -23,6 +23,12 @@ def timer(f):
         return result
     return wrapper
 
+# Get number of edges in complete dag with n nodes
+def num_edges_for_dag(n: int):
+    if ((n - 1) % 2 == 0):
+        return int((n - 1) / 2) * n
+    else: 
+        return int(n/2) * (n - 1)
 
 
 """

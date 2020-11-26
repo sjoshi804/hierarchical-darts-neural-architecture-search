@@ -7,8 +7,6 @@ from torch.autograd import Variable
 
 """
 Description: Trains the Alpha Parameters of the NN
-
-
 """
 class AlphaTrainer:
     def __init__(

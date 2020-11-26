@@ -1,9 +1,17 @@
 from typing import Dict 
 import unittest
 import torch
-
+from util import num_edges_for_dag
 
 class Alpha:
+    '''
+    This class is used to represent alpha the architecture parameters.
+
+    Use this class as interface to:
+    - initialize alpha
+    - get alpha for creating a model
+    - update alpha_i after a gradient update step
+    '''
 
     def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int]):
         '''
@@ -11,6 +19,10 @@ class Alpha:
         - num_nodes_at_levels[i] specifies how many nodes the DAGs that make the operations of level i + 1 have, for the top most level this means that the dag - this dictionary must have values for i = 0 .... num_levels - 1 num_nodes_at_level[0] = number of primitive operations
         - num_ops_at_level[i] - specifies how many operations we will create for a given level - obviously 1 for the top most level, otherwise we would be creating multiple final architectures - hence dictionary must specify values for i = 0, ..., num_levels - 1
         '''
+        # Initialize member variables required to access parameters dict correctly to construct neural network
+        self.num_levels = num_levels
+        self.num_nodes_at_level = num_nodes_at_level
+        self.num_ops_at_level = num_ops_at_level
 
         # Initialize empty dictionary that maps i -> alpha_i i.e. alpha for a given level i
         self.parameters = {}
@@ -18,21 +30,27 @@ class Alpha:
         # Ensure num_ops_at_level at top level is 1
         num_ops_at_level[num_levels] = 1
 
-        # Define expression for getting number of edges in a complete dag of n nodes
-        def num_edges_at_level(n: int):
-            if ((n - 1) % 2 == 0):
-                return int((n - 1) / 2) * n
-            else: 
-                return int(n/2) * (n - 1)
-
         # Initialize alpha_i for all i < num_levels
         for i in range(0, num_levels):
-            alpha_i = [[torch.zeros(num_ops_at_level[i] + 2) for x in range(0, num_edges_at_level(num_nodes_at_level[i]))] for y in range(0, num_ops_at_level[i+1])]
+
+            # Create a list of dictionaries, each dictionary represents the parameters for an operation at the next level
+            alpha_i = [ {}  for y in range(0, num_ops_at_level[i+1])]
+
+            # For each operation of level above i.e. dict, 
+            # insert key = edge tuple
+            # value = a list with size = num of operations at current level ...
+            # ... since this indicates how this edge will be formed as a mix
+            for dict in alpha_i:
+                for node_a in range(0, num_nodes_at_level[i]):
+                    for node_b in range(node_a + 1, num_nodes_at_level[i]):
+                        dict[(node_a, node_b)] = torch.zeros(num_ops_at_level[i] + 2)
+                    
+
             self.parameters[i] = alpha_i
     
 
 
-class ATest(unittest.TestCase):
+class AlphaTest(unittest.TestCase):
     '''
     A simple example
     ----------------
@@ -42,26 +60,33 @@ class ATest(unittest.TestCase):
 
     alpha_0 = 
     [
-        A 
-        [
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
-        ],
+        # A 
+        {
+            (0,1): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            
+            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            
+            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+        },
 
-        B
-        [
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
-        ],
+        # B
+        {
+            (0,1): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
 
-        C
-        [
+            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            
+            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+        },
+
+        # C
+        {
+            (0,1): 
             [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
-        ]
+            
+            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            
+            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+        }
     ]
 
     alpha_0 thus has specified how to create  operations of level 1 that have 3 nodes
@@ -69,26 +94,26 @@ class ATest(unittest.TestCase):
 
     alpha_1 = 
     [
-        D
-        [
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
-        ],
+        # D
+        {
+            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+        },
 
-        E
-        [
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
-        ],
+        # E
+        {
+            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+        },
 
-        F
-        [
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
-        ]
+        # F
+        {
+            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
+            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+        }
     ]
 
     alpha_1 thus has specified how to create 3 operations of level 2 each with 3 nodes
@@ -97,11 +122,11 @@ class ATest(unittest.TestCase):
     alpha_2 = 
     [
         Final Architecture
-        [
-            [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
-            [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
-            [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2]
-        ]
+        {
+            (0,1): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
+            (0,2): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
+            (1,2): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2]
+        }
     ]
 
     This specifies how to use level 2 ops: D, E, F and create a final architecture
@@ -118,12 +143,10 @@ class ATest(unittest.TestCase):
         for i in range(0, num_levels):
             alpha_i = testAlpha.parameters[i]
             for op_num in range(0, num_ops_at_level[i + 1]):
-                number_of_edges = 0
-                for x in range(0, num_nodes_at_level[i]):
-                    number_of_edges += x
-                for edge_num in range(0, number_of_edges):
-                    num_parameters = num_ops_at_level[i] + 2
-                    assert(alpha_i[op_num][edge_num].equal(torch.zeros(num_parameters)))
+                for node_a in range(0, num_nodes_at_level[i]):
+                    for node_b in range(node_a + 1, num_nodes_at_level[i]):
+                        num_parameters = num_ops_at_level[i] + 2
+                        assert(alpha_i[op_num][(node_a, node_b)].equal(torch.zeros(num_parameters)))
 
 if __name__ == '__main__':
     unittest.main()

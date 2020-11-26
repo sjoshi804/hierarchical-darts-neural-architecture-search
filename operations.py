@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 '''
@@ -10,12 +9,12 @@ C is the number of channels - in the case of color images this is RGB
 H_in, W_in - dimensions of the 2d matrix for a given channel (also called feature)
 H_out, W_out are determined by stride and H_in, W_in
 
-For our case here, we want to preserve the channels in all these operations, 
-therefore C_in = C_out always and hence the only parameter for channels is C
-
 Stride determines at what stride we will look at H_in, W_in
 
-Affine: Matrix multiplication of input and weights - Ask Professor?
+TODO: Why are the number of channels in and out the same for all these operations?
+At this rate in our setting, won't the number of channels keep growing? Unless we have zero connections?
+
+Affine: Matrix multiplication of input and weights - Ask Professor? - can ignore
 
 Useful Links:
 - https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
@@ -67,7 +66,7 @@ class Double(nn.Module):
 OPS = {
   'none' : lambda C, stride, affine: Zero(stride),
   'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
-  'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1),
+  'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1), #add batch normalization here
   'skip_connect' : lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
   'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
