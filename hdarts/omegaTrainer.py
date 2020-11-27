@@ -5,8 +5,6 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch import optim
 import numpy as np
-from util import addArgs, timer
-import util
 
 
 

@@ -1,7 +1,6 @@
 from typing import Dict 
 import unittest
 import torch
-from util import num_edges_for_dag
 
 class Alpha:
     '''

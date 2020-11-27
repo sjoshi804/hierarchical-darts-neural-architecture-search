@@ -1,10 +1,11 @@
-
+# External imports
 import unittest
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import cat
 
-from alpha import Alpha
+# Internal imports
+from hdarts import Alpha
 
 '''
 FIXME: TODO:
@@ -100,7 +101,7 @@ class Model(nn.module):
   The constructor requires the architecture parameters and then returns a network that can be used as 
   any other neural network might.
   '''
-  def __init__(self, alpha: Alpha, primitives: list, channels_in: int, channels_out: int):
+  def __init__(self, alpha: Alpha, primitives: list, channels_in: int, channels_start: int, num_classes: int, num_layers: int, stem_multiplier: int, multiplier: int):
     '''
     Input: alpha - an object of type Alpha
     
@@ -111,10 +112,16 @@ class Model(nn.module):
     # Initialize member variables
     self.alpha = alpha
     self.channels_in = channels_in
-    self.channels_out = channels_out
 
     # Create a dictionary that maps level to list of ops
     self._ops_at_level = {0: primitives}
+
+    # Create a 'stem' operation that is a sort of preprocessing layer before our hierarchical network
+    channels_start = channels_start * stem_multiplier
+    self.stem = nn.Sequential(
+        nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
+        nn.BatchNorm2d(channels_start)
+    )
 
     # Create all the operations at level num_levels - 1
     # Hence need to consider alpha_0 ... alpha_(num_levels-2)
@@ -133,6 +140,9 @@ class Model(nn.module):
         edge = (node_a, node_b)
         self.top_level_ops[str(edge)] = MixedOperation(self._ops_at_level[alpha.num_levels - 1], alpha.parameters[alpha.num_levels - 1][0][edge], channels_in)
         # FIXME: Channels probably wrong and stride left to default
+
+
+    # Create 
 
 
   def forward(self, x):

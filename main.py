@@ -4,9 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 from torch import optim
-import numpy as np
-from util import addArgs, timer
-import util
+
+import hdarts
 
 class HDARTS:
 
@@ -27,7 +26,7 @@ class HDARTS:
 
     #Leon return model criterion and optimizer and when training, time that
     self.trainNetwork(trainloader=self.dataloaderMNIST, model=self.modelMNIST)
-    util.showPrediction(trainloader=self.dataloaderMNIST, model=self.modelMNIST)
+    hdarts.util.showPrediction(trainloader=self.dataloaderMNIST, model=self.modelMNIST)
 
 
 
@@ -120,7 +119,7 @@ class HDARTS:
       model: 
     Returns: 
   """
-  @util.timer
+  @hdarts.util.timer
   def trainNetwork(self, trainloader,  model):
     criterion = nn.NLLLoss()# To compute errors along the way
     optimizer = optim.SGD(model.parameters(), lr=0.003)

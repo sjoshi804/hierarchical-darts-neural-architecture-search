@@ -1,8 +1,8 @@
 import torch.nn as nn
 
 '''
-Input: (N, C_in, H_in, W_in)
-Output: (N, C_out, H_out, W_out)
+Input Dim: (N, C_in, H_in, W_in)
+Output Dim: (N, C_out, H_out, W_out)
 
 N is the number of samples in a batch
 C is the number of channels - in the case of color images this is RGB
