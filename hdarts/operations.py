@@ -23,17 +23,19 @@ Useful Links:
 
 Question for Professor: Is there a dimensionality issue?
 '''
+
 SIMPLE_OPS = {
-  'none' : lambda C, stride, affine: Zero(stride),
-  'identity': lambda C, stride, affine: Identity(stride),
-  'double': lambda C, stride, affine: Double(stride)
+  'zero' : lambda C, stride, affine: Zero(C, stride),
+  'identity': lambda C, stride, affine: Identity(C, stride),
+  'double': lambda C, stride, affine: Double(C, stride)
 }
 
 class Zero(nn.Module):
 
-  def __init__(self, stride):
+  def __init__(self, C, stride):
     super(Zero, self).__init__()
     self.stride = stride
+    self.channels_out = C
 
   def forward(self, x):
     if self.stride == 1:
@@ -42,9 +44,10 @@ class Zero(nn.Module):
 
 class Identity(nn.Module):
 
-  def __init__(self, stride):
+  def __init__(self, C, stride):
     super(Identity, self).__init__()
     self.stride = stride
+    self.channels_out = C
 
   def forward(self, x):
     if self.stride == 1:
@@ -53,9 +56,10 @@ class Identity(nn.Module):
 
 class Double(nn.Module):
 
-  def __init__(self, stride):
+  def __init__(self, C, stride):
     super(Double, self).__init__()
     self.stride = stride
+    self.channels_out = C
 
   def forward(self, x):
     if self.stride == 1:

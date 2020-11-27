@@ -46,7 +46,6 @@ class Alpha:
                     
 
             self.parameters[i] = alpha_i
-    
 
 
 class AlphaTest(unittest.TestCase):
