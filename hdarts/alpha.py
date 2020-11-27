@@ -16,8 +16,18 @@ class Alpha:
         '''
         - num_levels - how many levels to hierarchy, = 1 makes it equivalent to DARTs, must be >= 1
         - num_nodes_at_levels[i] specifies how many nodes the DAGs that make the operations of level i + 1 have, for the top most level this means that the dag - this dictionary must have values for i = 0 .... num_levels - 1 num_nodes_at_level[0] = number of primitive operations
-        - num_ops_at_level[i] - specifies how many operations we will create for a given level - obviously 1 for the top most level, otherwise we would be creating multiple final architectures - hence dictionary must specify values for i = 0, ..., num_levels - 1
+        - num_ops_at_level[i] - specifies how many operations we will create for a given level - doesn't include zero and identity on primtivie level and doesn't include zero on higher levels - obviously 1 for the top most level, otherwise we would be creating multiple final architectures - hence dictionary must specify values for i = 0, ..., num_levels - 1
         '''
+        # Input validation
+        if (num_levels < 1):
+            raise Exception("Invalid number of levels, must be >= 1")
+        for i in range(0, num_levels):
+            if i in num_nodes_at_level:
+                if num_nodes_at_level[i] < 2:
+                    raise Exception("Insufficient number of nodes at level " + str(i) + ". Must be atleast 2.")
+            else:
+                raise Exception(str(i) + " key missing from num_nodes_at_level")
+
         # Initialize member variables required to access parameters dict correctly to construct neural network
         self.num_levels = num_levels
         self.num_nodes_at_level = num_nodes_at_level
@@ -42,7 +52,10 @@ class Alpha:
             for dict in alpha_i:
                 for node_a in range(0, num_nodes_at_level[i]):
                     for node_b in range(node_a + 1, num_nodes_at_level[i]):
-                        dict[(node_a, node_b)] = torch.zeros(num_ops_at_level[i] + 2)
+                        extra_ops = 1
+                        if i == 0:
+                            extra_ops = 2
+                        dict[(node_a, node_b)] = torch.zeros(num_ops_at_level[i] + extra_ops)
                     
 
             self.parameters[i] = alpha_i
@@ -60,30 +73,29 @@ class AlphaTest(unittest.TestCase):
     [
         # A 
         {
-            (0,1): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,1): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
-            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
-            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+            (1,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero]
         },
 
         # B
         {
-            (0,1): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,1): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
 
-            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
-            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+            (1,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero]
         },
 
         # C
         {
-            (0,1): 
-            [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,1): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
-            (0,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4],
+            (0,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
-            (1,2): [a_identity, a_zero, a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4]
+            (1,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero]
         }
     ]
 
@@ -94,23 +106,23 @@ class AlphaTest(unittest.TestCase):
     [
         # D
         {
-            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+            (0,1): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (0,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (1,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero]
         },
 
         # E
         {
-            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+            (0,1): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (0,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (1,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero]
         },
 
         # F
         {
-            (0,1): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (0,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2],
-            (1,2): [a_identity, a_zero, a_op^1_0, a_op^1_1, a_op^1_2]
+            (0,1): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (0,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero],
+            (1,2): [a_op^1_0, a_op^1_1, a_op^1_2, a_zero]
         }
     ]
 
@@ -121,9 +133,9 @@ class AlphaTest(unittest.TestCase):
     [
         Final Architecture
         {
-            (0,1): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
-            (0,2): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2],
-            (1,2): [a_identity, a_zero, a_op^2_0, a_op^2_1, a_op^2_2]
+            (0,1): [a_op^2_0, a_op^2_1, a_op^2_2, a_zero],
+            (0,2): [a_op^2_0, a_op^2_1, a_op^2_2, a_zero],
+            (1,2): [a_op^2_0, a_op^2_1, a_op^2_2, a_zero]
         }
     ]
 
@@ -143,8 +155,14 @@ class AlphaTest(unittest.TestCase):
             for op_num in range(0, num_ops_at_level[i + 1]):
                 for node_a in range(0, num_nodes_at_level[i]):
                     for node_b in range(node_a + 1, num_nodes_at_level[i]):
-                        num_parameters = num_ops_at_level[i] + 2
+                        if i == 0:
+                            num_parameters = num_ops_at_level[i] + 2
+                        else:
+                            num_parameters = num_ops_at_level[i] + 1
                         assert(alpha_i[op_num][(node_a, node_b)].equal(torch.zeros(num_parameters)))
+
+    def test_input_validation(self):
+        raise NotImplementedError
 
 if __name__ == '__main__':
     unittest.main()

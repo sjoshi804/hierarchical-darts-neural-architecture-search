@@ -6,7 +6,7 @@ from torch import cat, tensor, zeros
 
 # Internal imports
 from alpha import Alpha
-from operations import SIMPLE_OPS
+from operations import SIMPLE_OPS, MANDATORY_OPS, LEN_SIMPLE_OPS, Zero
 
 '''
 Channels / Features are managed in the following way: 
@@ -45,7 +45,7 @@ class MixedOperation(nn.Module):
 
 class HierarchicalOperation(nn.Module):
   '''
-  Returns a hierarchial operation from a computational dag specified by number of nodes and dict of ops: stringified tuple representing the edge -> nn.Module representing operation on that edge.
+  Returns a hierarchical operation from a computational dag specified by number of nodes and dict of ops: stringified tuple representing the edge -> nn.Module representing operation on that edge.
 
   The computational dag for this is created by create_dag inside
 
@@ -101,6 +101,7 @@ class HierarchicalOperation(nn.Module):
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
     - Called with top-level dag parameters in the model.__init__ and recursively generates entire model
+    TODO: Perhaps add a coin flip that drops paths entirely? Borrwoing from drop_path in darts
     '''
 
     # Initialize variables
@@ -125,7 +126,8 @@ class HierarchicalOperation(nn.Module):
 
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
-        for key in primitives:
+        primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
+        for key in primitives: 
           base_operations.append(primitives[key](C=channels_in, stride=1, affine=False))
           #TODO: stride left to default=1, change?
 
@@ -140,6 +142,8 @@ class HierarchicalOperation(nn.Module):
             primitives=primitives,
             channels_in=channels_in
           ))
+        # Append zero operation
+        base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=1))
 
       '''
       Determine channels_out
@@ -290,37 +294,80 @@ class Model(nn.Module):
 
 class TestMixedOperation(unittest.TestCase):
 
-  # Test with primitives
   def test_primitives(self):
+    '''
+    Test with primitive operations directly.
+    '''
+
     x = tensor([[
       [
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1]
+        [1, 1],
+        [1, 1]
       ]
     ]])
 
     # Initialize primitives
     primitives = []
-    for key in SIMPLE_OPS:
-      primitives.append(SIMPLE_OPS[key](C=1, stride=1, affine=False))
+    primitives.append(SIMPLE_OPS["double"](C=1, stride=1, affine=False))
+    primitives.append(SIMPLE_OPS["triple"](C=1, stride=1, affine=False))
     
     alpha_e = zeros(len(primitives))
-
     mixed_op = MixedOperation(operations=primitives, alpha_e=alpha_e)
 
     y = tensor([[
       [
-        [1.5, 1.5, 1.5],
-        [1.5, 1.5, 1.5],
-        [1.5, 1.5, 1.5]
+        [2.5, 2.5],
+        [2.5, 2.5]
       ]
     ]])
 
-    assert(mixed_op(x).equal(y))
+    assert(y.equal(mixed_op(x)))
 
 class TestHierarchicalOperation(unittest.TestCase):
-  pass
+
+  def test_1level(self):
+    '''
+    Testing hdarts with just 1 level.
+    Equivalent to darts in this case. Only Mixed Operations of primitives on nodes.
+    Only tests base case of create_dag.
+    '''
+    x = tensor([
+      # feature 1
+      [[
+          [1, 1],
+          [1, 1]
+      ]]
+    ])
+
+    # Initialize Alpha
+    alpha = Alpha(1, {0: 3}, {0: LEN_SIMPLE_OPS})
+
+    hierarchical_op = HierarchicalOperation.create_dag(
+      level=0, 
+      is_top_level=False, # set to False, even though it should be true, to get a hierarchical operation back instead of dict
+      alpha=alpha, 
+      alpha_dag=alpha.parameters[0][0],
+      primitives=SIMPLE_OPS,
+      channels_in=1
+    )
+
+    y = tensor([
+      # feature 1
+      [[
+        [1.5, 1.5],
+        [1.5, 1.5]
+      ]],
+      # feature 2
+      [[
+        [1.5, 1.5],
+        [1.5, 1.5]
+      ]]
+    ])
+
+    assert(y.equal(hierarchical_op(x)))
+
+  def test_2level(self):
+    raise NotImplemented
 
 class TestModel(unittest.TestCase):
   pass

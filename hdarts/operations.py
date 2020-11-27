@@ -1,3 +1,4 @@
+from torch import cat, tensor
 import torch.nn as nn
 
 '''
@@ -11,35 +12,48 @@ H_out, W_out are determined by stride and H_in, W_in
 
 Stride determines at what stride we will look at H_in, W_in
 
-TODO: Why are the number of channels in and out the same for all these operations?
-At this rate in our setting, won't the number of channels keep growing? Unless we have zero connections?
-
 Affine: Matrix multiplication of input and weights - Ask Professor? - can ignore
 
 Useful Links:
 - https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
 - https://datascience.stackexchange.com/questions/13405/what-is-affine-transformation-in-regards-to-neural-networks
 
-
-Question for Professor: Is there a dimensionality issue?
 '''
 
 SIMPLE_OPS = {
-  'identity': lambda C, stride, affine: Identity(C, stride),
-  'double': lambda C, stride, affine: Double(C, stride)
+  "double": lambda C, stride, affine: Double(C, stride),
+  "triple": lambda C, stride, affine: Triple(C, stride)
 }
 
+LEN_SIMPLE_OPS = 2
+
+MANDATORY_OPS = {
+  "identity": lambda C, stride, affine: Identity(C, stride),
+  "zero": lambda C, stride, affine: Zero(C, C, stride)
+}
+
+
+# TODO: Check if this is correct.
 class Zero(nn.Module):
 
-  def __init__(self, C, stride):
+  def __init__(self, C_in, C_out, stride):
     super(Zero, self).__init__()
     self.stride = stride
-    self.channels_out = C
+    self.channels_in = C_in
+    self.channels_out = C_out
 
   def forward(self, x):
+    if (self.channels_in < self.channels_out):
+      #Add extra channels to make channels_out sufficient
+      dummy_input = tensor([ [[[0]]] for i in range(0, len(x))])
+      x = cat(tuple([x] + [ dummy_input for i in range(0, self.channels_out - self.channels_in) ]), dim=-1)
+    elif (self.channels_in > self.channels_out ):
+      raise Exception("Assumption violated: channels_in > channels_out")
+
     if self.stride == 1:
       return x.mul(0.)
     return x[:,:,::self.stride,::self.stride].mul(0.)
+      
 
 class Identity(nn.Module):
 
@@ -64,6 +78,18 @@ class Double(nn.Module):
     if self.stride == 1:
       return x.mul(2.)
     return x[:,:,::self.stride,::self.stride].mul(2.)
+
+class Triple(nn.Module):
+
+  def __init__(self, C, stride):
+    super(Triple, self).__init__()
+    self.stride = stride
+    self.channels_out = C
+
+  def forward(self, x):
+    if self.stride == 1:
+      return x.mul(3.)
+    return x[:,:,::self.stride,::self.stride].mul(3.)
 
 '''
 OPS = {
