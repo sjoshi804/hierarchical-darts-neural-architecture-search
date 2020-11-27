@@ -2,10 +2,11 @@
 import unittest
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import cat
+from torch import cat, tensor, zeros
 
 # Internal imports
-from hdarts import Alpha
+from alpha import Alpha
+from operations import SIMPLE_OPS
 
 '''
 Channels / Features are managed in the following way: 
@@ -27,6 +28,8 @@ class MixedOperation(nn.Module):
     includes the parameters for all of its children recursively)
     - Set self.weights to the softmax of the architecture parameters for the edge
     '''
+    # Superclass constructor
+    super().__init__()
 
     # Module List
     self._ops = nn.ModuleList(operations)
@@ -40,7 +43,7 @@ class MixedOperation(nn.Module):
     '''
     return sum(w * op(x) for w, op in zip(self.weights, self._ops))
 
-class HierarchicalOperation(nn.module):
+class HierarchicalOperation(nn.Module):
   '''
   Returns a hierarchial operation from a computational dag specified by number of nodes and dict of ops: stringified tuple representing the edge -> nn.Module representing operation on that edge.
 
@@ -53,6 +56,8 @@ class HierarchicalOperation(nn.module):
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.module] used to initialize the ModuleDict
     '''
+    # Superclass constructor
+    super().__init__()
 
     # Initialize member variables
     self.num_nodes = num_nodes
@@ -161,7 +166,7 @@ class HierarchicalOperation(nn.module):
     else:
       return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
 
-class Model(nn.module):
+class Model(nn.Module):
   '''
   This class represents the actual resultant neural network.
   
@@ -184,6 +189,8 @@ class Model(nn.module):
     - postprocessing layer(s)
     - creating operations to place on edges of top-level dag
     '''
+    # Superclass constructor
+    super().__init__()
 
     # Initialize member variables
     self.alpha = alpha
@@ -228,7 +235,7 @@ class Model(nn.module):
     '''
     This function applies the pre-processing layers to the input first, then the actual model using the top-level dag, then applies the post-processing layers that first by using global_avg_pooling downsample feature maps to single values, then this is flattened and finally a linear classifer uses this to output a prediction.
     '''
-    
+
     '''
     Pre-processing / Stem Layers
     '''
@@ -282,10 +289,41 @@ class Model(nn.module):
     return logits
 
 class TestMixedOperation(unittest.TestCase):
-  pass
+
+  # Test with primitives
+  def test_primitives(self):
+    x = tensor([[
+      [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1]
+      ]
+    ]])
+
+    # Initialize primitives
+    primitives = []
+    for key in SIMPLE_OPS:
+      primitives.append(SIMPLE_OPS[key](C=1, stride=1, affine=False))
+    
+    alpha_e = zeros(len(primitives))
+
+    mixed_op = MixedOperation(operations=primitives, alpha_e=alpha_e)
+
+    y = tensor([[
+      [
+        [1.5, 1.5, 1.5],
+        [1.5, 1.5, 1.5],
+        [1.5, 1.5, 1.5]
+      ]
+    ]])
+
+    assert(mixed_op(x).equal(y))
 
 class TestHierarchicalOperation(unittest.TestCase):
   pass
 
 class TestModel(unittest.TestCase):
   pass
+
+if __name__ == '__main__':
+    unittest.main()

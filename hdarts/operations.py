@@ -25,7 +25,6 @@ Question for Professor: Is there a dimensionality issue?
 '''
 
 SIMPLE_OPS = {
-  'zero' : lambda C, stride, affine: Zero(C, stride),
   'identity': lambda C, stride, affine: Identity(C, stride),
   'double': lambda C, stride, affine: Double(C, stride)
 }
