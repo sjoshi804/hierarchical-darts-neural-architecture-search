@@ -10,10 +10,8 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 ## Design
 
-- Classes that represent the composable representations - allow for G_ij(G_kl)) - sort of notation
-- Class to get alpha_i
-- Class to compute gradient
-- Class to visualize 
+- Alpha - class that encapsulates the architecture parameters
+- Model - class that is used to instantiate a network from a given Alpha and Primitives
 
 ## Results
 
