@@ -94,14 +94,14 @@ class HierarchicalOperation(nn.Module):
           for prev_node in range(0, node_a):
             input.append(output[(prev_node, node_a)])
 
-          input = cat(tuple(input), dim=0) 
+          input = cat(tuple(input), dim=1) 
           # TODO: Confirm that concatenation along features is what is desired.
 
         output[edge] = self.ops[str(edge)](input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
-    return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=0)
+    return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
@@ -389,39 +389,4 @@ class TestModel(unittest.TestCase):
   pass
 
 if __name__ == '__main__':
-  x = tensor([
-    [
-      # feature 1
-      [
-        [1, 1],
-        [1, 1]
-      ]
-    ]
-    ])
-
-  # Initialize Alpha
-  alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
-
-  # Create hierarchical operation 
-  hierarchical_op = HierarchicalOperation.create_dag(
-    level=1, 
-    alpha=alpha, 
-    alpha_dag=alpha.parameters[1][0],
-    primitives=SIMPLE_OPS,
-    channels_in=1
-  )
-
-  y = tensor([
-    # feature 1
-    [[
-      [1.5, 1.5],
-      [1.5, 1.5]
-    ]],
-    # feature 2
-    [[
-      [2.25, 2.25],
-      [2.25, 2.25]
-    ]]
-  ])
-
-  print(hierarchical_op(x))
+  unittest.main()
