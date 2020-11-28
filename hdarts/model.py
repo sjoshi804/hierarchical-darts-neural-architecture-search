@@ -63,6 +63,11 @@ class HierarchicalOperation(nn.Module):
     self.num_nodes = num_nodes
     self.ops = nn.ModuleDict(ops)
 
+    # Determine channels out - simply a sum of the channels in for the last node
+    # We can take this sum by using channels_out property since by recursive assumption we will have this defined
+    # or in the base case, the primitive op (lives in operations.py) will have this defined
+    self.channels_out = sum(self.ops[str((prev_node, num_nodes - 1))].channels_out for prev_node in range(0, num_nodes - 1))
+
   def forward(self, x):
     '''
     Iteratively compute using each edge of the dag
@@ -89,14 +94,14 @@ class HierarchicalOperation(nn.Module):
           input = cat(tuple(input), dim=0) 
           # TODO: Confirm that concatenation along features is what is desired.
 
-        output[edge] = self.ops[str(edge)].forward(input)
+        output[edge] = self.ops[str(edge)](input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
     return cat(tuple([output(prev_node, self.num_nodes - 1) for prev_node in range(0, self.num_nodes - 1)]), dim=0)
 
   @staticmethod
-  def create_dag(level: int, is_top_level: bool, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
+  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -136,7 +141,6 @@ class HierarchicalOperation(nn.Module):
         for op_num in range(0, alpha.num_ops_at_level[level]):
           base_operations.append(HierarchicalOperation.create_dag(
             level=level-1,
-            is_top_level=False,
             alpha=alpha,
             alpha_dag=alpha[level-1][op_num],
             primitives=primitives,
@@ -149,7 +153,7 @@ class HierarchicalOperation(nn.Module):
       Determine channels_out
       '''
       # Set channels out (identical for all operations in base_operations)
-      nodes_channels_out[node_a] = base_operations[0].channels_out
+      nodes_channels_out.append(base_operations[0].channels_out)
 
       '''
       Create mixed operations on outgoing edges for node_a
@@ -162,13 +166,9 @@ class HierarchicalOperation(nn.Module):
         dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
 
     '''
-    Return dag directly or HierarchicalOperation depending on whether is_top_level
+    Return HierarchicalOperation created from dag'
     '''
-    # If top level, then return dag otherwise return Hierarchical Operation to use in higher-level dag
-    if (is_top_level):
-      return dag
-    else:
-      return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
+    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
 
 class Model(nn.Module):
   '''
@@ -214,16 +214,12 @@ class Model(nn.Module):
     '''
 
     # Dict from edge tuple to MixedOperation on that edge
-    self.top_level_ops = nn.ModuleDict(
-      HierarchicalOperation.create_dag
-      (
-        level=alpha.num_levels - 1,
-        is_top_level=True,
-        alpha=alpha,
-        alpha_dag=alpha.parameters[alpha.num_levels - 1][0],
-        primitives=primitives,
-        channels_in=channels_start        
-      )
+    self.top_level_op = HierarchicalOperation.create_dag(
+      level=alpha.num_levels - 1,
+      alpha=alpha,
+      alpha_dag=alpha.parameters[alpha.num_levels - 1][0],
+      primitives=primitives,
+      channels_in=channels_start        
     )
 
     '''
@@ -233,7 +229,7 @@ class Model(nn.Module):
     self.global_avg_pooling = nn.AdaptiveAvgPool2d(1)
 
     # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
-    self.classifer = nn.Linear(channels_start, num_classes) 
+    self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
 
   def forward(self, x): 
     '''
@@ -249,33 +245,7 @@ class Model(nn.Module):
     Main model - identical to HierarchicalOperation.forward in this section
     '''
 
-    # Initialize variables
-    num_nodes = self.alpha.num_nodes_at_level[self.alpha.num_levels - 1]
-    output = {}
-
-    for node_a in range(0, num_nodes):
-      for node_b in range(node_a + 1, num_nodes):
-
-        edge = (node_a, node_b)
-
-        # For a given edge, determine the input to the starting node
-        # If first node then trivial, as equal to input of entire module
-        if (node_a == 0): 
-          input = x
-
-        # Otherwise it is the concatentation of the output of every edge (node, node_a)
-        else: 
-          input = []
-          for prev_node in range(0, node_a):
-            input.append(output[(prev_node, node_a)])
-
-          input = cat(tuple(input), dim=0) # TODO: Confirm that concatenation along features is what is desired.
-
-        # Compute output on edge by applying operation that lives on this edge
-        output[edge] = self.top_level_ops[str(edge)](input)
-    
-    # By extension, the final output be the concatenation of all inputs to the final node
-    y = cat(tuple([output(prev_node, num_nodes - 1) for prev_node in range(0, num_nodes - 1)]), dim=0)
+    y = self.top_level_op(x)
 
     '''
     Post-processing Neural Network Layers
