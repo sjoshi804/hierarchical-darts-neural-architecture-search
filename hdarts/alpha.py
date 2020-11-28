@@ -27,6 +27,11 @@ class Alpha:
                     raise Exception("Insufficient number of nodes at level " + str(i) + ". Must be atleast 2.")
             else:
                 raise Exception(str(i) + " key missing from num_nodes_at_level")
+            if i in num_ops_at_level:
+                if num_ops_at_level[i] < 1:
+                    raise Exception("Insufficient number of ops at level " + str(i) + ". Must be atleast 1.")
+            else:
+                raise Exception(str(i) + " key missing from num_ops_at_level")
 
         # Initialize member variables required to access parameters dict correctly to construct neural network
         self.num_levels = num_levels
@@ -141,7 +146,7 @@ class AlphaTest(unittest.TestCase):
 
     This specifies how to use level 2 ops: D, E, F and create a final architecture
 
-    alpha can be thought of as [alpha_0, alpha_1, alpha_2]
+    alpha.parameters = [alpha_0, alpha_1, alpha_2]
     '''
     def test_initialization(self):
         num_levels = 3
