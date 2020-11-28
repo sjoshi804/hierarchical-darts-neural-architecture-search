@@ -209,7 +209,9 @@ class Model(nn.Module):
     # Create a pre-processing / 'stem' operation that is a sort of preprocessing layer before our hierarchical network
     channels_start = channels_start * stem_multiplier
     self.pre_processing = nn.Sequential(
+        # Number of filters is specified by channels_start -> thus increasing feature dimension
         nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
+        # Normalization in the regular sense - acts as a regularizer
         nn.BatchNorm2d(channels_start)
     )
 
@@ -233,6 +235,7 @@ class Model(nn.Module):
     self.global_avg_pooling = nn.AdaptiveAvgPool2d(1)
 
     # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
+    # Linear transformation without activation function
     self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
 
   def forward(self, x): 
@@ -264,6 +267,7 @@ class Model(nn.Module):
     # Classifier
     logits = self.classifer(y)
 
+    # TODO: Maybe softmax at end to ensure that this specified a probability distribution
     return logits
 
 class TestMixedOperation(unittest.TestCase):
@@ -407,7 +411,29 @@ class TestHierarchicalOperation(unittest.TestCase):
 
 
 class TestModel(unittest.TestCase):
-  pass
+  def test_2level_model(self):
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1, 1],
+        [1, 1]
+      ]
+    ]
+    ])
+
+    # Initialize Alpha
+    alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
+
+    model = Model(
+      alpha=alpha,
+      primitives=SIMPLE_OPS,
+      channels_in=1,
+      channels_start=2,
+      stem_multiplier=1,
+      num_classes=5)
+
+    print(model(x))
 
 if __name__ == '__main__':
   unittest.main()

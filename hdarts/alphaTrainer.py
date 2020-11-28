@@ -8,6 +8,8 @@ from torch.autograd import Variable
 """
 Description: Trains the Alpha Parameters of the NN
 """
+
+# TODO: Needs to know loss function in terms of alpha parameters and input
 class AlphaTrainer:
     def __init__(
         self, 
