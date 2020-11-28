@@ -32,16 +32,20 @@ class MixedOperation(nn.Module):
     super().__init__()
 
     # Module List
-    self._ops = nn.ModuleList(operations)
+    self.ops = nn.ModuleList(operations)
 
     # Create weights from softmax of alpha_e
     self.weights = F.softmax(alpha_e, dim=-1)
+
+    # Channels out = channels out of any operation in self._ops as all are same, 
+    # recursively will have channels_out defined or primitive will have channels_out defined
+    self.channels_out = self.ops[0].channels_out
 
   def forward(self, x):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    return sum(w * op(x) for w, op in zip(self.weights, self._ops))
+    return sum(w * op(x) for w, op in zip(self.weights, self.ops))
 
 class HierarchicalOperation(nn.Module):
   '''
@@ -64,8 +68,7 @@ class HierarchicalOperation(nn.Module):
     self.ops = nn.ModuleDict(ops)
 
     # Determine channels out - simply a sum of the channels in for the last node
-    # We can take this sum by using channels_out property since by recursive assumption we will have this defined
-    # or in the base case, the primitive op (lives in operations.py) will have this defined
+    # We can take this sum by using channels_out property since Mixed operation will have it defined
     self.channels_out = sum(self.ops[str((prev_node, num_nodes - 1))].channels_out for prev_node in range(0, num_nodes - 1))
 
   def forward(self, x):
@@ -98,7 +101,7 @@ class HierarchicalOperation(nn.Module):
     
     # By extension, final output will be the concatenation of all inputs to the final node
     # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
-    return cat(tuple([output(prev_node, self.num_nodes - 1) for prev_node in range(0, self.num_nodes - 1)]), dim=0)
+    return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=0)
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
@@ -302,11 +305,13 @@ class TestHierarchicalOperation(unittest.TestCase):
     Only tests base case of create_dag.
     '''
     x = tensor([
+    [
       # feature 1
-      [[
-          [1, 1],
-          [1, 1]
-      ]]
+      [
+        [1, 1],
+        [1, 1]
+      ]
+    ]
     ])
 
     # Initialize Alpha
@@ -314,7 +319,6 @@ class TestHierarchicalOperation(unittest.TestCase):
 
     hierarchical_op = HierarchicalOperation.create_dag(
       level=0, 
-      is_top_level=False, # set to False, even though it should be true, to get a hierarchical operation back instead of dict
       alpha=alpha, 
       alpha_dag=alpha.parameters[0][0],
       primitives=SIMPLE_OPS,
@@ -329,8 +333,8 @@ class TestHierarchicalOperation(unittest.TestCase):
       ]],
       # feature 2
       [[
-        [1.5, 1.5],
-        [1.5, 1.5]
+        [2.25, 2.25],
+        [2.25, 2.25]
       ]]
     ])
 
