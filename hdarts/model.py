@@ -145,10 +145,11 @@ class HierarchicalOperation(nn.Module):
           base_operations.append(HierarchicalOperation.create_dag(
             level=level-1,
             alpha=alpha,
-            alpha_dag=alpha[level-1][op_num],
+            alpha_dag=alpha.parameters[level-1][op_num],
             primitives=primitives,
             channels_in=channels_in
           ))
+
         # Append zero operation
         base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=1))
 
@@ -341,10 +342,86 @@ class TestHierarchicalOperation(unittest.TestCase):
     assert(y.equal(hierarchical_op(x)))
 
   def test_2level(self):
-    raise NotImplemented
+    '''
+    Testing hdarts with just 1 level.
+    Equivalent to darts in this case. Only Mixed Operations of primitives on nodes.
+    Only tests base case of create_dag.
+    '''
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1, 1],
+        [1, 1]
+      ]
+    ]
+    ])
+
+    # Initialize Alpha
+    alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
+
+    # Create hierarchical operation 
+    hierarchical_op = HierarchicalOperation.create_dag(
+      level=1, 
+      alpha=alpha, 
+      alpha_dag=alpha.parameters[1][0],
+      primitives=SIMPLE_OPS,
+      channels_in=1
+    )
+
+    y = tensor([
+      # feature 1
+      [[
+        [1.5, 1.5],
+        [1.5, 1.5]
+      ]],
+      # feature 2
+      [[
+        [2.25, 2.25],
+        [2.25, 2.25]
+      ]]
+    ])
+
+    print(hierarchical_op(x))
+
 
 class TestModel(unittest.TestCase):
   pass
 
 if __name__ == '__main__':
-    unittest.main()
+  x = tensor([
+    [
+      # feature 1
+      [
+        [1, 1],
+        [1, 1]
+      ]
+    ]
+    ])
+
+  # Initialize Alpha
+  alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
+
+  # Create hierarchical operation 
+  hierarchical_op = HierarchicalOperation.create_dag(
+    level=1, 
+    alpha=alpha, 
+    alpha_dag=alpha.parameters[1][0],
+    primitives=SIMPLE_OPS,
+    channels_in=1
+  )
+
+  y = tensor([
+    # feature 1
+    [[
+      [1.5, 1.5],
+      [1.5, 1.5]
+    ]],
+    # feature 2
+    [[
+      [2.25, 2.25],
+      [2.25, 2.25]
+    ]]
+  ])
+
+  print(hierarchical_op(x))
