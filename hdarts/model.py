@@ -2,7 +2,7 @@
 import unittest
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import cat, tensor, zeros
+from torch import cat, equal, tensor, zeros
 
 # Internal imports
 from alpha import Alpha
@@ -326,18 +326,18 @@ class TestHierarchicalOperation(unittest.TestCase):
       channels_in=1
     )
 
-    y = tensor([
+    y = tensor([[
       # feature 1
-      [[
+      [
         [1.5, 1.5],
         [1.5, 1.5]
-      ]],
+      ],
       # feature 2
-      [[
+      [
         [2.25, 2.25],
         [2.25, 2.25]
-      ]]
-    ])
+      ]
+    ]])
 
     assert(y.equal(hierarchical_op(x)))
 
@@ -369,6 +369,7 @@ class TestHierarchicalOperation(unittest.TestCase):
       channels_in=1
     )
 
+    # TODO: Put the correct y here
     y = tensor([
       # feature 1
       [[
@@ -383,6 +384,8 @@ class TestHierarchicalOperation(unittest.TestCase):
     ])
 
     print(hierarchical_op(x))
+
+    assert(y.equal(hierarchical_op(x)))
 
 
 class TestModel(unittest.TestCase):
