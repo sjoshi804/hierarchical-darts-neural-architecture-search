@@ -265,9 +265,8 @@ class Model(nn.Module):
     y = y.view(y.size(0), -1) 
 
     # Classifier
-    logits = self.classifer(y)
+    logits = F.softmax(self.classifer(y), dim=-1)
 
-    # TODO: Maybe softmax at end to ensure that this specified a probability distribution
     return logits
 
 class TestMixedOperation(unittest.TestCase):
@@ -416,8 +415,8 @@ class TestModel(unittest.TestCase):
     [
       # feature 1
       [
-        [1, 1],
-        [1, 1]
+        [1., 1.],
+        [1., 1.]
       ]
     ]
     ])
@@ -433,7 +432,13 @@ class TestModel(unittest.TestCase):
       stem_multiplier=1,
       num_classes=5)
 
-    print(model(x))
+    # For every sample, ensure that the vector returned is a valid probability distribution
+    sum = 0
+    for sample in model(x.float()):
+      for prob in sample: 
+        assert(prob >= 0 and prob <= 1)
+        sum += prob
+      assert(sum == 1)
 
 if __name__ == '__main__':
   unittest.main()
