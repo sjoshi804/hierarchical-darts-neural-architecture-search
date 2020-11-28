@@ -44,9 +44,10 @@ class Zero(nn.Module):
 
   def forward(self, x):
     if (self.channels_in < self.channels_out):
-      #Add extra channels to make channels_out sufficient
-      dummy_input = tensor([ [[[0]]] for i in range(0, len(x))])
-      x = cat(tuple([x] + [ dummy_input for i in range(0, self.channels_out - self.channels_in) ]), dim=-1)
+      #Add extra channels to make channels_out sufficient, this will break if stride!=1 anywhere in model
+      feature_map = [[0] * len(x[0][0][0])] * len(x[0][0])
+      dummy_input = tensor(([[feature_map] * (self.channels_out - self.channels_in)] * len(x)))
+      x = cat((x, dummy_input), dim=-1)
     elif (self.channels_in > self.channels_out ):
       raise Exception("Assumption violated: channels_in > channels_out")
 
