@@ -8,6 +8,9 @@ from torch.autograd import Variable
 """
 Description: Trains the Alpha Parameters of the NN
 """
+
+# TODO: Needs to know loss function in terms of alpha parameters and input
+# TODO: What about designing a model controller like pt.darts?
 class AlphaTrainer:
     def __init__(
         self, 

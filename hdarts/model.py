@@ -209,7 +209,9 @@ class Model(nn.Module):
     # Create a pre-processing / 'stem' operation that is a sort of preprocessing layer before our hierarchical network
     channels_start = channels_start * stem_multiplier
     self.pre_processing = nn.Sequential(
+        # Number of filters is specified by channels_start -> thus increasing feature dimension
         nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
+        # Normalization in the regular sense - acts as a regularizer
         nn.BatchNorm2d(channels_start)
     )
 
@@ -233,6 +235,7 @@ class Model(nn.Module):
     self.global_avg_pooling = nn.AdaptiveAvgPool2d(1)
 
     # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
+    # Linear transformation without activation function
     self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
 
   def forward(self, x): 
@@ -262,7 +265,7 @@ class Model(nn.Module):
     y = y.view(y.size(0), -1) 
 
     # Classifier
-    logits = self.classifer(y)
+    logits = F.softmax(self.classifer(y), dim=-1)
 
     return logits
 
@@ -369,27 +372,73 @@ class TestHierarchicalOperation(unittest.TestCase):
       channels_in=1
     )
 
-    # TODO: Put the correct y here
     y = tensor([
-      # feature 1
-      [[
-        [1.5, 1.5],
-        [1.5, 1.5]
-      ]],
-      # feature 2
-      [[
-        [2.25, 2.25],
-        [2.25, 2.25]
-      ]]
-    ])
+    [
+      [
+        [0.7500, 0.7500],
+        [0.7500, 0.7500]
+      ],
 
-    print(hierarchical_op(x))
+      [
+        [1.1250, 1.1250],
+        [1.1250, 1.1250]
+      ],
+
+      [
+        [0.5625, 0.5625],
+        [0.5625, 0.5625]
+      ],
+
+      [
+        [0.84375, 0.84375],
+        [0.84375, 0.84375]
+      ],
+
+      [
+        [0.84375, 0.84375],
+        [0.84375, 0.84375]
+      ],
+
+      [
+        [1.265625, 1.265625],
+        [1.265625, 1.265625]
+      ]
+    ]
+    ])
 
     assert(y.equal(hierarchical_op(x)))
 
 
 class TestModel(unittest.TestCase):
-  pass
+  def test_2level_model(self):
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1., 1.],
+        [1., 1.]
+      ]
+    ]
+    ])
+
+    # Initialize Alpha
+    alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
+
+    model = Model(
+      alpha=alpha,
+      primitives=SIMPLE_OPS,
+      channels_in=1,
+      channels_start=2,
+      stem_multiplier=1,
+      num_classes=5)
+
+    # For every sample, ensure that the vector returned is a valid probability distribution
+    sum = 0
+    for sample in model(x.float()):
+      for prob in sample: 
+        assert(prob >= 0 and prob <= 1)
+        sum += prob
+      assert(sum == 1)
 
 if __name__ == '__main__':
   unittest.main()
