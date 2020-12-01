@@ -67,6 +67,9 @@ class AverageMeter():
 
 
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
+    '''
+    Saves alphs and weights to be able to recreate model as is.
+    '''
     # Constructs alpha object
     alpha = Alpha(
       num_levels=model.num_levels,
@@ -104,7 +107,39 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     # If best copies over to best checkpoint directory
     if is_best:
         shutil.copyfile(alpha_file_path, os.path.join(best_checkpoint_dir, "alpha.pkl"))
-        shutil.copyfile(alpha_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
+        shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
+    
+    # TODO: Save other parameters needed for ModelController constructor
+
+def load_checkpoint(checkpoint_root_dir, epoch=-1):
+    '''
+    Creates model from saved files in checkpoint root directory
+    If epoch not specified, loads best checkpoint
+    '''
+    alpha_file_path = "alpha.pkl"
+    weights_file_path = "weights.pkl"
+    
+    # If epoch specified set checkpoint dir to that epoch
+    checkpoint_dir = "best"
+    if epoch > 0:
+        checkpoint_dir = str(epoch)
+    alpha_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, alpha_file_path)
+    weights_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, weights_file_path)
+
+    # Function to load object from file
+    def load_object(filename):
+        with open(filename, 'rb') as input:
+            obj = pickle.load(input)
+            return obj
+    
+    # Gets alpha and weights
+    alpha = load_object(alpha_file_path)
+    weights = torch.load(weights_file_path)
+
+    return alpha, weights
+    #TODO: Model creation from alpha, weights and other parameters
+
+    
 
 def accuracy(output, target, topk=(1,)):
     """ Computes the precision@k for the specified values of k """
