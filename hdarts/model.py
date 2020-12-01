@@ -1,12 +1,13 @@
 # External imports
-import unittest
+from typing import Dict
+
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import cat, equal, tensor, zeros
+from torch import cat
 
 # Internal imports
 from alpha import Alpha
-from operations import SIMPLE_OPS, MANDATORY_OPS, LEN_SIMPLE_OPS, Zero
+from operations import MANDATORY_OPS,  Zero
 
 '''
 Channels / Features are managed in the following way: 
@@ -272,27 +273,68 @@ class Model(nn.Module):
 class ModelController(nn.Module):
   '''
   This class is the controller for model and has alpha parameters registered in addition to the weights (omega) parameters automatically registered by Pytorch.
+
+  get_omega -> returns weights parameters
+
+  get_alpha_level(level) -> returns parameter (yes singular, as the whole tensor is wrapped as one parameter) corresponding to alpha_level
   '''
-  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion: function):
+  def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion):
+    '''
+    - Initializes member variables
+    - Registers alpha parameters by creating a dummy alpha using the constructor and using get_alpha_level to get the alpha for a given level. This tensor is wrapped with nn.Parameter to indicate that is a Parameter for this controller (thus requires gradient computation with respect to itself). This nn.Parameter is added to the nn.ParameterList that is self.alphas.
+    - Registers omega parameters by creating a model from aforementioned dummy alpha
+    '''
 
-    # Register Alpha parameters
-    self.alpha = nn.ParameterList() # List of parameters: each alpha_i is a parameter
-    for level in range(0, alpha.num_levels):
-      self.alpha.append(nn.Parameter(self.alpha.get_alpha_level(level)))
-
-    # Initialize criterion
+    # Initialize member variables
+    self.num_levels = num_levels
+    self.num_nodes_at_level = num_nodes_at_level
+    self.num_ops_at_level = num_ops_at_level
+    self.primitives = primitives
+    self.channels_in = channels_in
+    self.channels_start = channels_start
+    self.stem_multiplier = stem_multiplier
+    self.num_classes = num_classes
     self.loss_criterion = loss_criterion
 
-    # Initialize model
+    # Register Alpha parameters
+    # Initial Alpha
+    alpha = Alpha(
+      num_levels=self.num_levels,
+      num_nodes_at_level=self.num_nodes_at_level,
+      num_ops_at_level=self.num_ops_at_level
+    )
+    self.alpha = nn.ParameterList() # List of parameters: each alpha_i is a parameter
+    for level in range(0, num_levels):
+      self.alpha.append(nn.Parameter(alpha.get_alpha_level(level)))
+    
+    # Initialize model with initial alpha
     self.model = Model(
           alpha=alpha,
-          primitives=primitives,
-          channels_in=channels_in,
-          channels_start=channels_start,
-          stem_multiplier=stem_multiplier,
-          num_classes=num_classes)
+          primitives=self.primitives,
+          channels_in=self.channels_in,
+          channels_start=self.channels_start,
+          stem_multiplier=self.stem_multiplier,
+          num_classes=self.num_classes)
 
   def forward(self, x):
+    # Initialize alpha from self.alpha parameter list
+    alpha = Alpha(
+      num_levels=self.num_levels,
+      num_nodes_at_level=self.num_nodes_at_level,
+      num_ops_at_level=self.num_ops_at_level
+    )
+    for level in range(0, alpha.num_levels):
+      alpha.set_alpha_level(level, self.alpha[level])
+
+    # Initialize model with new alpha
+    self.model = Model(
+          alpha=alpha,
+          primitives=self.primitives,
+          channels_in=self.channels_in,
+          channels_start=self.channels_start,
+          stem_multiplier=self.stem_multiplier,
+          num_classes=self.num_classes)
+
     return self.model(x)
 
   def loss(self, X, y):
@@ -304,178 +346,3 @@ class ModelController(nn.Module):
 
   def get_omega(self):
     return self.model.parameters()
-
-  
-class TestMixedOperation(unittest.TestCase):
-
-  def test_primitives(self):
-    '''
-    Test with primitive operations directly.
-    '''
-
-    x = tensor([[
-      [
-        [1, 1],
-        [1, 1]
-      ]
-    ]])
-
-    # Initialize primitives
-    primitives = []
-    primitives.append(SIMPLE_OPS["double"](C=1, stride=1, affine=False))
-    primitives.append(SIMPLE_OPS["triple"](C=1, stride=1, affine=False))
-    
-    alpha_e = zeros(len(primitives))
-    mixed_op = MixedOperation(operations=primitives, alpha_e=alpha_e)
-
-    y = tensor([[
-      [
-        [2.5, 2.5],
-        [2.5, 2.5]
-      ]
-    ]])
-
-    assert(y.equal(mixed_op(x)))
-
-class TestHierarchicalOperation(unittest.TestCase):
-
-  def test_1level(self):
-    '''
-    Testing hdarts with just 1 level.
-    Equivalent to darts in this case. Only Mixed Operations of primitives on nodes.
-    Only tests base case of create_dag.
-    '''
-    x = tensor([
-    [
-      # feature 1
-      [
-        [1, 1],
-        [1, 1]
-      ]
-    ]
-    ])
-
-    # Initialize Alpha
-    alpha = Alpha(1, {0: 3}, {0: LEN_SIMPLE_OPS})
-
-    hierarchical_op = HierarchicalOperation.create_dag(
-      level=0, 
-      alpha=alpha, 
-      alpha_dag=alpha.parameters[0][0],
-      primitives=SIMPLE_OPS,
-      channels_in=1
-    )
-
-    y = tensor([[
-      # feature 1
-      [
-        [1.5, 1.5],
-        [1.5, 1.5]
-      ],
-      # feature 2
-      [
-        [2.25, 2.25],
-        [2.25, 2.25]
-      ]
-    ]])
-
-    assert(y.equal(hierarchical_op(x)))
-
-  def test_2level(self):
-    '''
-    Testing hdarts with just 1 level.
-    Equivalent to darts in this case. Only Mixed Operations of primitives on nodes.
-    Only tests base case of create_dag.
-    '''
-    x = tensor([
-    [
-      # feature 1
-      [
-        [1, 1],
-        [1, 1]
-      ]
-    ]
-    ])
-
-    # Initialize Alpha
-    alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
-
-    # Create hierarchical operation 
-    hierarchical_op = HierarchicalOperation.create_dag(
-      level=1, 
-      alpha=alpha, 
-      alpha_dag=alpha.parameters[1][0],
-      primitives=SIMPLE_OPS,
-      channels_in=1
-    )
-
-    y = tensor([
-    [
-      [
-        [0.7500, 0.7500],
-        [0.7500, 0.7500]
-      ],
-
-      [
-        [1.1250, 1.1250],
-        [1.1250, 1.1250]
-      ],
-
-      [
-        [0.5625, 0.5625],
-        [0.5625, 0.5625]
-      ],
-
-      [
-        [0.84375, 0.84375],
-        [0.84375, 0.84375]
-      ],
-
-      [
-        [0.84375, 0.84375],
-        [0.84375, 0.84375]
-      ],
-
-      [
-        [1.265625, 1.265625],
-        [1.265625, 1.265625]
-      ]
-    ]
-    ])
-
-    assert(y.equal(hierarchical_op(x)))
-
-
-class TestModel(unittest.TestCase):
-  def test_2level_model(self):
-    x = tensor([
-    [
-      # feature 1
-      [
-        [1., 1.],
-        [1., 1.]
-      ]
-    ]
-    ])
-
-    # Initialize Alpha
-    alpha = Alpha(2, {0: 3, 1: 3}, {0: LEN_SIMPLE_OPS, 1: 1})
-
-    model = Model(
-      alpha=alpha,
-      primitives=SIMPLE_OPS,
-      channels_in=1,
-      channels_start=2,
-      stem_multiplier=1,
-      num_classes=5)
-
-    # For every sample, ensure that the vector returned is a valid probability distribution
-    sum = 0
-    for sample in model(x.float()):
-      for prob in sample: 
-        assert(prob >= 0 and prob <= 1)
-        sum += prob
-      assert(sum == 1)
-
-if __name__ == '__main__':
-  unittest.main()
