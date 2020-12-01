@@ -4,9 +4,7 @@ from torch import cat, equal, tensor, zeros
 #Internal imports
 from alpha import Alpha
 from model import MixedOperation, HierarchicalOperation
-from operations import SIMPLE_OPS, MANDATORY_OPS, LEN_SIMPLE_OPS, Zero
-
-
+from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
 
 class TestMixedOperation(unittest.TestCase):
 

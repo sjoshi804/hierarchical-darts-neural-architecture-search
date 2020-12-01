@@ -1,5 +1,3 @@
 from .alpha import Alpha
-from .alphaTrainer import AlphaTrainer
-from .model import Model
-from .omegaTrainer import OmegaTrainer
+from .model import ModelController
 from .operations import SIMPLE_OPS

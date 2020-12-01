@@ -269,6 +269,43 @@ class Model(nn.Module):
 
     return logits
 
+class ModelController(nn.Module):
+  '''
+  This class is the controller for model and has alpha parameters registered in addition to the weights (omega) parameters automatically registered by Pytorch.
+  '''
+  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion: function):
+
+    # Register Alpha parameters
+    self.alpha = nn.ParameterList() # List of parameters: each alpha_i is a parameter
+    for level in range(0, alpha.num_levels):
+      self.alpha.append(nn.Parameter(self.alpha.get_alpha_level(level)))
+
+    # Initialize criterion
+    self.loss_criterion = loss_criterion
+
+    # Initialize model
+    self.model = Model(
+          alpha=alpha,
+          primitives=primitives,
+          channels_in=channels_in,
+          channels_start=channels_start,
+          stem_multiplier=stem_multiplier,
+          num_classes=num_classes)
+
+  def forward(self, x):
+    return self.model(x)
+
+  def loss(self, X, y):
+      logits = self.forward(X)
+      return self.loss_criterion(logits, y)
+
+  def get_alpha_level(self, level):
+    return self.alpha[level]
+
+  def get_omega(self):
+    return self.model.parameters()
+
+  
 class TestMixedOperation(unittest.TestCase):
 
   def test_primitives(self):
