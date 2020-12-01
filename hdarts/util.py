@@ -1,18 +1,15 @@
 """ Config class for search/augment """
 import argparse
-import os
+
 #import genotypes as gt
 from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-
-
-
-
 from functools import wraps
 from time import time
+
 def timer(f):
     @wraps(f)
     def wrapper(*args, **kwargs):

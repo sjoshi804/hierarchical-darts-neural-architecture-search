@@ -1,4 +1,4 @@
-from torch import cat, tensor
+from torch import tensor
 import torch.nn as nn
 
 '''
