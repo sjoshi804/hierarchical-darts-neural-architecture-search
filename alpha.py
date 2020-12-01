@@ -1,6 +1,5 @@
 from typing import Dict 
 from torch import tensor, zeros
-from copy import deepcopy
 
 class Alpha:
     '''
@@ -71,16 +70,16 @@ class Alpha:
         for dag in level:
             alpha_dag = []
             for edge in sorted(dag.keys()):
-                alpha_edge = deepcopy(list(dag[edge]))
+                alpha_edge = list(dag[edge])
                 alpha_dag.append(alpha_edge)
             alpha_level.append(alpha_dag)
         return tensor(alpha_level)
 
     def set_alpha_level(self, num_level, alpha_level):
-        for dag_num in range(0, self.parameters[num_level]):
+        for dag_num in range(0, len(self.parameters[num_level])):
             edge_num = 0
             for node_a in range(0, self.num_nodes_at_level[num_level]):
                 for node_b in range(node_a + 1, self.num_nodes_at_level[num_level]):
-                    self.parameters[num_level][dag_num][(node_a, node_b)] = deepcopy(alpha_level[dag_num][edge_num])
+                    self.parameters[num_level][dag_num][(node_a, node_b)] = alpha_level[dag_num][edge_num]
                     edge_num += 1
         

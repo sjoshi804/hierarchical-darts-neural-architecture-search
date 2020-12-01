@@ -272,9 +272,9 @@ class Model(nn.Module):
 
 class ModelController(nn.Module):
   '''
-  This class is the controller for model and has alpha parameters registered in addition to the weights (omega) parameters automatically registered by Pytorch.
+  This class is the controller for model and has alpha parameters registered in addition to the weights (weights) parameters automatically registered by Pytorch.
 
-  get_omega -> returns weights parameters
+  get_weights -> returns weights parameters
 
   get_alpha_level(level) -> returns parameter (yes singular, as the whole tensor is wrapped as one parameter) corresponding to alpha_level
   '''
@@ -282,8 +282,10 @@ class ModelController(nn.Module):
     '''
     - Initializes member variables
     - Registers alpha parameters by creating a dummy alpha using the constructor and using get_alpha_level to get the alpha for a given level. This tensor is wrapped with nn.Parameter to indicate that is a Parameter for this controller (thus requires gradient computation with respect to itself). This nn.Parameter is added to the nn.ParameterList that is self.alphas.
-    - Registers omega parameters by creating a model from aforementioned dummy alpha
+    - Registers weights parameters by creating a model from aforementioned dummy alpha
     '''
+    # Superclass constructor
+    super().__init__()
 
     # Initialize member variables
     self.num_levels = num_levels
@@ -344,5 +346,5 @@ class ModelController(nn.Module):
   def get_alpha_level(self, level):
     return self.alpha[level]
 
-  def get_omega(self):
+  def get_weights(self):
     return self.model.parameters()
