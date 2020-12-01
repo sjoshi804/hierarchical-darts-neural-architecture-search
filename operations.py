@@ -1,4 +1,4 @@
-from torch import tensor
+from torch import tensor, cat
 import torch.nn as nn
 
 '''
@@ -25,15 +25,13 @@ SIMPLE_OPS = {
   "triple": lambda C, stride, affine: Triple(C, stride)
 }
 
-LEN_SIMPLE_OPS = 2
+LEN_SIMPLE_OPS = len(SIMPLE_OPS)
 
 MANDATORY_OPS = {
   "identity": lambda C, stride, affine: Identity(C, stride),
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
-
-# TODO: Check if this is correct.
 class Zero(nn.Module):
 
   def __init__(self, C_in, C_out, stride):
@@ -92,10 +90,9 @@ class Triple(nn.Module):
       return x.mul(3.)
     return x[:,:,::self.stride,::self.stride].mul(3.)
 
-'''
+
 OPS = {
-  'none' : lambda C, stride, affine: Zero(stride),
-  'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+    'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
   'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1), #add batch normalization here
   'skip_connect' : lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
@@ -110,6 +107,8 @@ OPS = {
     nn.BatchNorm2d(C, affine=affine)
     ),
 }
+
+LEN_OPS = len(OPS)
 
 class ReLUConvBN(nn.Module):
 
@@ -178,8 +177,6 @@ class FactorizedReduce(nn.Module):
 
   def forward(self, x):
     x = self.relu(x)
-    out = torch.cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
+    out = cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
     out = self.bn(out)
     return out
-
-'''
