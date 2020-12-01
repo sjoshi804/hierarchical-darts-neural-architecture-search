@@ -347,4 +347,4 @@ class ModelController(nn.Module):
     return self.alpha[level]
 
   def get_weights(self):
-    return self.model.parameters()
+    return list(self.model.parameters())

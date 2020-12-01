@@ -16,19 +16,19 @@ DATASET = "mnist"
 DATAPATH = os.path.join(dir_path, "data/mnist")
 
 # WEIGHTS Config
-WEIGHTS_LR = 1.
-WEIGHTS_LR_MIN = 1.
+WEIGHTS_LR = .01
+WEIGHTS_LR_MIN = .00001
 WEIGHTS_MOMENTUM = 1.
 WEIGHTS_WEIGHT_DECAY = 1.
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 1
+EPOCHS = 10
 BATCH_SIZE = 1000
 
 # ALPHA Optimizer Config
 ALPHA_WEIGHT_DECAY = 1
-ALPHA_LR = 1
+ALPHA_LR = .01
 
 # HDARTS Config
 NUM_LEVELS = 2
@@ -114,10 +114,11 @@ class HDARTS:
             lr_scheduler.step()
 
             # TODO: PRINT This?
-            lr = lr_scheduler.get_lr()[0]
+            lr = lr_scheduler.get_last_lr()
 
             # TODO: Log alpha_i for each level i
-            
+            for level in range(0, self.num_levels):
+                print(level, model.alpha[level])
 
             # training
             self.train(
@@ -149,7 +150,7 @@ class HDARTS:
         print("Final best Prec@1 = {:.4%}".format(best_top1))
 
 
-    def train(self, train_loader, valid_loader, model, w_optim, alpha_optim, epoch):
+    def train(self, train_loader, valid_loader, model: ModelController, w_optim, alpha_optim, epoch):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
@@ -168,6 +169,7 @@ class HDARTS:
                 logits = model(trn_X)
                 loss = model.loss_criterion(logits, trn_y)
                 loss.backward()
+                alpha_optim[level].step()
 
             # Weights Step
             w_optim.zero_grad()
