@@ -1,7 +1,7 @@
 from typing import Dict 
 import unittest
-import torch
-
+from torch import tensor, zeros
+from copy import deepcopy
 class Alpha:
     '''
     This class is used to represent alpha the architecture parameters.
@@ -60,11 +60,30 @@ class Alpha:
                         extra_ops = 1
                         if i == 0:
                             extra_ops = 2
-                        dict[(node_a, node_b)] = torch.zeros(num_ops_at_level[i] + extra_ops)
+                        dict[(node_a, node_b)] = zeros(num_ops_at_level[i] + extra_ops)
                     
 
             self.parameters[i] = alpha_i
 
+    def get_alpha_level(self, num_level):
+        level = self.parameters[num_level]
+        alpha_level = []
+        for dag in level:
+            alpha_dag = []
+            for edge in sorted(dag.keys()):
+                alpha_edge = deepcopy(list(dag[edge]))
+                alpha_dag.append(alpha_edge)
+            alpha_level.append(alpha_dag)
+        return tensor(alpha_level)
+
+    def set_alpha_level(self, num_level, alpha_level):
+        for dag_num in range(0, self.parameters[num_level]):
+            edge_num = 0
+            for node_a in range(0, self.num_nodes_at_level[num_level]):
+                for node_b in range(node_a + 1, self.num_nodes_at_level[num_level]):
+                    self.parameters[num_level][dag_num][(node_a, node_b)] = deepcopy(alpha_level[dag_num][edge_num])
+                    edge_num += 1
+        
 
 class AlphaTest(unittest.TestCase):
     '''
@@ -83,7 +102,7 @@ class AlphaTest(unittest.TestCase):
             (0,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero],
             
             (1,2): [a_primitive_0, a_primitive_1, a_primitive_2, a_primitive_3, a_primitive_4, a_identity, a_zero]
-        },
+        }
 
         # B
         {
@@ -146,7 +165,7 @@ class AlphaTest(unittest.TestCase):
 
     This specifies how to use level 2 ops: D, E, F and create a final architecture
 
-    alpha.parameters = [alpha_0, alpha_1, alpha_2]
+    alpha.parameters = {0: alpha_0, 1: alpha_1, 2: alpha_2}
     '''
     def test_initialization(self):
         num_levels = 3
@@ -164,7 +183,9 @@ class AlphaTest(unittest.TestCase):
                             num_parameters = num_ops_at_level[i] + 2
                         else:
                             num_parameters = num_ops_at_level[i] + 1
-                        assert(alpha_i[op_num][(node_a, node_b)].equal(torch.zeros(num_parameters)))
+                        assert(alpha_i[op_num][(node_a, node_b)].equal(zeros(num_parameters)))
+        for i in range(num_levels):
+            print(testAlpha.get_alpha_level(i))
 
     def test_input_validation(self):
         raise NotImplementedError
