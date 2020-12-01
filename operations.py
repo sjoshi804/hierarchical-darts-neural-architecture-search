@@ -92,9 +92,8 @@ class Triple(nn.Module):
 
 
 OPS = {
-    'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+  'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
   'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1), #add batch normalization here
-  'skip_connect' : lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
   'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
   'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
@@ -155,16 +154,6 @@ class SepConv(nn.Module):
 
   def forward(self, x):
     return self.op(x)
-
-
-class Identity(nn.Module):
-
-  def __init__(self):
-    super(Identity, self).__init__()
-
-  def forward(self, x):
-    return x
-
 class FactorizedReduce(nn.Module):
 
   def __init__(self, C_in, C_out, affine=True):
