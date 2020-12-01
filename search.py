@@ -5,7 +5,7 @@ import os
 
 # Internal Imports
 from model import ModelController
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from operations import OPS, LEN_OPS, SIMPLE_OPS, LEN_SIMPLE_OPS
 from util import get_data, save_checkpoint, accuracy, AverageMeter
 
 dir_path = os.getcwd()
@@ -31,11 +31,11 @@ ALPHA_WEIGHT_DECAY = 1
 ALPHA_LR = .01
 
 # HDARTS Config
-NUM_LEVELS = 2
-NUM_NODES_AT_LEVEL = { 0: 2, 1: 2 }
-NUM_OPS_AT_LEVEL = { 0: LEN_SIMPLE_OPS, 1: 1}
-CHANNELS_START = 1
-STEM_MULTIPLIER = 1
+NUM_LEVELS = 3
+NUM_NODES_AT_LEVEL = { 0: 3, 1: 3, 2: 3}
+NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 3, 2: 3}
+CHANNELS_START = 3
+STEM_MULTIPLIER = 3
 
 # MISCELLANEOUS CONFIG
 NUM_DOWNLOAD_WORKERS = 2
@@ -62,7 +62,7 @@ class HDARTS:
             num_levels=NUM_LEVELS,
             num_nodes_at_level=NUM_NODES_AT_LEVEL,
             num_ops_at_level=NUM_OPS_AT_LEVEL,
-            primitives=SIMPLE_OPS,
+            primitives=OPS,
             channels_in=input_channels,
             channels_start=CHANNELS_START,
             stem_multiplier=1,
