@@ -5,35 +5,36 @@ import os
 
 # Internal Imports
 from model import ModelController
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from operations import SIMPLE_OPS, LEN_SIMPLE_OPS, OPS,LEN_OPS
 from util import get_data, save_checkpoint, accuracy, AverageMeter
+from torch.utils.tensorboard import SummaryWriter
 
 dir_path = os.getcwd()
 # FIXME: SET TO REASONABLE VALUES
 
 # DATASET Config
 DATASET = "mnist"
-DATAPATH = os.path.join(dir_path, "data/mnist")
+DATAPATH = os.path.join(dir_path, "data")
 
 # WEIGHTS Config
 WEIGHTS_LR = .01
-WEIGHTS_LR_MIN = .00001
+WEIGHTS_LR_MIN = .001
 WEIGHTS_MOMENTUM = 1.
 WEIGHTS_WEIGHT_DECAY = 1.
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 10
-BATCH_SIZE = 1000
+EPOCHS = 1
+BATCH_SIZE = 100
 
 # ALPHA Optimizer Config
-ALPHA_WEIGHT_DECAY = 1
-ALPHA_LR = .01
+ALPHA_WEIGHT_DECAY = 0
+ALPHA_LR = .1
 
 # HDARTS Config
 NUM_LEVELS = 2
 NUM_NODES_AT_LEVEL = { 0: 2, 1: 2 }
-NUM_OPS_AT_LEVEL = { 0: LEN_SIMPLE_OPS, 1: 1}
+NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 1}
 CHANNELS_START = 1
 STEM_MULTIPLIER = 1
 
@@ -45,6 +46,7 @@ CHECKPOINT_PATH = os.path.join(dir_path, "checkpoints")
 class HDARTS:
     def __init__(self):
         self.num_levels = NUM_LEVELS
+        self.writer = SummaryWriter('runs/' + DATASET)
 
     def run(self):
         # Get Data & MetaData
@@ -62,12 +64,13 @@ class HDARTS:
             num_levels=NUM_LEVELS,
             num_nodes_at_level=NUM_NODES_AT_LEVEL,
             num_ops_at_level=NUM_OPS_AT_LEVEL,
-            primitives=SIMPLE_OPS,
+            primitives=OPS,
             channels_in=input_channels,
             channels_start=CHANNELS_START,
             stem_multiplier=1,
             num_classes=num_classes,
-            loss_criterion=loss_criterion
+            loss_criterion=loss_criterion,
+            writer=self.writer
         )
 
         # Weights Optimizer
@@ -88,7 +91,7 @@ class HDARTS:
 
 
         # Train / Validation Split
-        n_train = len(train_data)
+        n_train = len(train_data) // 100
         split = n_train // 2
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
@@ -105,16 +108,16 @@ class HDARTS:
                                                 pin_memory=True)
         
         # Learning Rate scheudler
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            w_optim, EPOCHS, eta_min=WEIGHTS_LR_MIN)
+        #lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+         #   w_optim, EPOCHS, eta_min=WEIGHTS_LR_MIN)
 
         # Training Loop
         best_top1 = 0.
         for epoch in range(EPOCHS):
-            lr_scheduler.step()
+            #lr_scheduler.step()
 
             # TODO: PRINT This?
-            lr = lr_scheduler.get_last_lr()
+            #lr = lr_scheduler.get_last_lr()
 
             # TODO: Log alpha_i for each level i
             for level in range(0, self.num_levels):
@@ -143,7 +146,7 @@ class HDARTS:
                 is_best = True
             else:
                 is_best = False
-
+            
             print("Saving checkpoint")
             save_checkpoint(model, epoch, CHECKPOINT_PATH, is_best)
 
@@ -193,9 +196,9 @@ class HDARTS:
                         epoch+1, EPOCHS, step, len(train_loader)-1, losses=losses,
                         top1=top1, top5=top5))
 
-            print('train/loss', loss.item(), cur_step)
-            print('train/top1', prec1.item(), cur_step)
-            print('train/top5', prec5.item(), cur_step)
+            self.writer.add_scalar('train/loss', loss.item(), cur_step)
+            self.writer.add_scalar('train/top1', prec1.item(), cur_step)
+            self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
 
         print("Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, EPOCHS, top1.avg))
@@ -211,10 +214,8 @@ class HDARTS:
         with torch.no_grad():
             for step, (X, y) in enumerate(valid_loader):
                 N = X.size(0)
-
                 logits = model(X)
                 loss = model.loss_criterion(logits, y)
-
                 prec1, prec5 = accuracy(logits, y, topk=(1, 5))
                 losses.update(loss.item(), N)
                 top1.update(prec1.item(), N)
@@ -227,9 +228,9 @@ class HDARTS:
                             epoch+1, EPOCHS, step, len(valid_loader)-1, losses=losses,
                             top1=top1, top5=top5))
 
-        print('val/loss', losses.avg, cur_step)
-        print('val/top1', top1.avg, cur_step)
-        print('val/top5', top5.avg, cur_step)
+        self.writer.add_scalar('val/loss', losses.avg, cur_step)
+        self.writer.add_scalar('val/top1', top1.avg, cur_step)
+        self.writer.add_scalar('val/top5', top5.avg, cur_step)
 
         print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, EPOCHS, top1.avg))
 

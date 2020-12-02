@@ -4,6 +4,7 @@ from typing import Dict
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import cat
+from torch.utils.tensorboard.writer import SummaryWriter
 
 # Internal imports
 from alpha import Alpha
@@ -36,7 +37,7 @@ class MixedOperation(nn.Module):
     self.ops = nn.ModuleList(operations)
 
     # Create weights from softmax of alpha_e
-    self.weights = F.softmax(alpha_e, dim=-1)
+    self.weights = nn.ParameterList([nn.Parameter(x) for x in F.softmax(alpha_e, dim=-1)])
 
     # Channels out = channels out of any operation in self._ops as all are same, 
     # recursively will have channels_out defined or primitive will have channels_out defined
@@ -183,7 +184,7 @@ class Model(nn.Module):
   any other neural network might.
   '''
 
-  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int):
+  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, writer=None):
     '''
     Input: 
     - alpha - an object of type Alpha
@@ -203,6 +204,7 @@ class Model(nn.Module):
 
     # Initialize member variables
     self.alpha = alpha
+    self.writer = writer
 
     '''
     Pre-processing / Stem Layers
@@ -229,6 +231,8 @@ class Model(nn.Module):
       channels_in=channels_start        
     )
 
+
+
     '''
     Post-processing Layers
     '''
@@ -254,6 +258,8 @@ class Model(nn.Module):
     '''
 
     y = self.top_level_op(x)
+    if self.writer is not None:
+      self.writer.add_graph(self.top_level_op, x)
 
     '''
     Post-processing Neural Network Layers
@@ -278,7 +284,7 @@ class ModelController(nn.Module):
 
   get_alpha_level(level) -> returns parameter (yes singular, as the whole tensor is wrapped as one parameter) corresponding to alpha_level
   '''
-  def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion):
+  def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion, writer=None):
     '''
     - Initializes member variables
     - Registers alpha parameters by creating a dummy alpha using the constructor and using get_alpha_level to get the alpha for a given level. This tensor is wrapped with nn.Parameter to indicate that is a Parameter for this controller (thus requires gradient computation with respect to itself). This nn.Parameter is added to the nn.ParameterList that is self.alphas.
@@ -297,6 +303,7 @@ class ModelController(nn.Module):
     self.stem_multiplier = stem_multiplier
     self.num_classes = num_classes
     self.loss_criterion = loss_criterion
+    self.writer = writer 
 
     # Register Alpha parameters
     # Initial Alpha
@@ -316,7 +323,8 @@ class ModelController(nn.Module):
           channels_in=self.channels_in,
           channels_start=self.channels_start,
           stem_multiplier=self.stem_multiplier,
-          num_classes=self.num_classes)
+          num_classes=self.num_classes,
+          writer=writer)
 
   def forward(self, x):
     # Initialize alpha from self.alpha parameter list
@@ -335,7 +343,8 @@ class ModelController(nn.Module):
           channels_in=self.channels_in,
           channels_start=self.channels_start,
           stem_multiplier=self.stem_multiplier,
-          num_classes=self.num_classes)
+          num_classes=self.num_classes,
+          writer=self.writer)
 
     return self.model(x)
 
