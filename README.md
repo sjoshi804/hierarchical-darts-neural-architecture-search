@@ -21,6 +21,9 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 
 TODO: Make every inner most value in alpha a nn.Parameter (Alpha)
+
 TODO: Find a new way to get alpha (ModelController) that conforms with ^
+
 TODO: Instead of constructing network on init, construct on .setAlpha (Model)
+
 TODO: Investigate tensorboard plot inside mixed op first and then at higher levels
