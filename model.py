@@ -37,7 +37,7 @@ class MixedOperation(nn.Module):
     self.ops = nn.ModuleList(operations)
 
     # Create weights from softmax of alpha_e
-    self.weights = nn.ParameterList([nn.Parameter(x) for x in F.softmax(alpha_e, dim=-1)])
+    self.weights = F.softmax(alpha_e, dim=-1)
 
     # Channels out = channels out of any operation in self._ops as all are same, 
     # recursively will have channels_out defined or primitive will have channels_out defined
