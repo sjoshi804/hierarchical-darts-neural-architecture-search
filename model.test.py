@@ -189,7 +189,7 @@ class TestModelController(unittest.TestCase):
     num_epochs = 10
 
     # Initialize tensorboard writer
-    dt_string = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+    dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
     writer = SummaryWriter('test/test_double_func/' + str(dt_string) + "/")
   
     # Define model 
@@ -202,7 +202,7 @@ class TestModelController(unittest.TestCase):
             channels_start=1,
             stem_multiplier=1,
             num_classes=1,
-            loss_criterion=nn.L1Loss,
+            loss_criterion=nn.L1Loss(),
             writer=writer,
             test_mode=True
         )
@@ -212,8 +212,7 @@ class TestModelController(unittest.TestCase):
     [
       # feature 1
       [
-        [1., 1.],
-        [1., 1.]
+        [1.]
       ]
     ]
     ])
@@ -223,8 +222,7 @@ class TestModelController(unittest.TestCase):
     [
       # feature 1
       [
-        [2., 2.],
-        [2., 2.]
+        [2.]
       ]
     ]
     ])
@@ -244,6 +242,7 @@ class TestModelController(unittest.TestCase):
         alpha_optim[level].zero_grad()
         logits = model(x)
         loss = model.loss_criterion(logits, y)
+        print(model(x))
         print(loss)
         loss.backward()
         alpha_optim[level].step()
