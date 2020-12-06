@@ -1,5 +1,6 @@
 from typing import Dict 
 from torch import tensor, zeros
+import torch.nn as nn
 
 class Alpha:
     '''
@@ -59,22 +60,41 @@ class Alpha:
                         extra_ops = 1
                         if i == 0:
                             extra_ops = 2
-                        dict[(node_a, node_b)] = zeros(num_ops_at_level[i] + extra_ops)
+                        # Initializing the alpha for an edge
+                        # Each value in this list is a parameter
+                        dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))
                     
-
             self.parameters[i] = alpha_i
 
+    # List of all the parameters for a given level, so that optimizer can work with them all together
+    # Lexicographic ordering
     def get_alpha_level(self, num_level):
-        level = self.parameters[num_level]
-        alpha_level = []
-        for dag in level:
-            alpha_dag = []
-            for edge in sorted(dag.keys()):
-                alpha_edge = list(dag[edge])
-                alpha_dag.append(alpha_edge)
-            alpha_level.append(alpha_dag)
-        return tensor(alpha_level)
 
+        # Gets the list of dags at a given level
+        level = self.parameters[num_level]
+
+        # Initialize an empty list to contain all the parameters
+        alpha_level = []
+
+        # Loop through all the dags 
+        for dag in level:
+
+            # Each alpha_dag will now be the lexicographic ordering of all the parameters for each of its edges
+            alpha_dag = []
+
+            for edge in sorted(dag.keys()):
+                # Extend alpha_dag by the alpha parameters for this edge
+                alpha_edge = dag[edge]
+                alpha_dag.append(alpha_edge)
+
+            # Extend overall alpha_level by the alpha parameters for this dag (alpha_dag)
+            alpha_level.extend(alpha_dag)
+
+        # Make alpha_level a nn.ParameterList
+        return nn.ParameterList(alpha_level)
+
+'''
+NOT SURE IF THIS IS NEEDED
     def set_alpha_level(self, num_level, alpha_level):
         for dag_num in range(0, len(self.parameters[num_level])):
             edge_num = 0
@@ -82,4 +102,4 @@ class Alpha:
                 for node_b in range(node_a + 1, self.num_nodes_at_level[num_level]):
                     self.parameters[num_level][dag_num][(node_a, node_b)] = alpha_level[dag_num][edge_num]
                     edge_num += 1
-        
+'''

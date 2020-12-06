@@ -70,15 +70,6 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     '''
     Saves alphs and weights to be able to recreate model as is.
     '''
-    # Constructs alpha object
-    alpha = Alpha(
-      num_levels=model.num_levels,
-      num_nodes_at_level=model.num_nodes_at_level,
-      num_ops_at_level=model.num_ops_at_level
-    )
-    for level in range(0, model.num_levels):
-        alpha.set_alpha_level(level, model.get_alpha_level(level))
-
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
         os.makedirs(checkpoint_root_dir)
@@ -96,8 +87,8 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     # Saves alpha and weights to aforementioned directory
     alpha_file_path = os.path.join(current_checkpoint_dir, "alpha.pkl")
     weights_file_path = os.path.join(current_checkpoint_dir, "weights.pkl")
-    save_object(alpha, alpha_file_path)
-    torch.save(model.state_dict(), weights_file_path)
+    save_object(model.alpha, alpha_file_path)
+    torch.save(model.model.state_dict(), weights_file_path)
 
     # Ensure best checkpoint directory exists
     best_checkpoint_dir = os.path.join(checkpoint_root_dir, "best")

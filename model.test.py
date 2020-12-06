@@ -174,7 +174,9 @@ class TestModel(unittest.TestCase):
         assert(prob >= 0 and prob <= 1)
         sum += prob
       assert(sum == 1)
-      
+
+class TestModelController(unittest.TestCase):
+  pass 
 
 if __name__ == '__main__':
   unittest.main()

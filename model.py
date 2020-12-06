@@ -3,7 +3,7 @@ from typing import Dict
 
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import cat
+from torch import cat, tensor
 from torch.utils.tensorboard.writer import SummaryWriter
 
 # Internal imports
@@ -36,8 +36,8 @@ class MixedOperation(nn.Module):
     # Module List
     self.ops = nn.ModuleList(operations)
 
-    # Create weights from softmax of alpha_e
-    self.weights = F.softmax(alpha_e, dim=-1)
+    # Initialize alpha edge 
+    self.alpha_e = alpha_e
 
     # Channels out = channels out of any operation in self._ops as all are same, 
     # recursively will have channels_out defined or primitive will have channels_out defined
@@ -47,7 +47,8 @@ class MixedOperation(nn.Module):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    return sum(w * op(x) for w, op in zip(self.weights, self.ops))
+    weights = F.softmax(self.alpha_e, dim=-1)
+    return sum(w * op(x) for w, op in zip(weights, self.ops))
 
 class HierarchicalOperation(nn.Module):
   '''
@@ -184,7 +185,7 @@ class Model(nn.Module):
   any other neural network might.
   '''
 
-  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, writer=None):
+  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, writer=None, test_mode=False):
     '''
     Input: 
     - alpha - an object of type Alpha
@@ -205,18 +206,19 @@ class Model(nn.Module):
     # Initialize member variables
     self.alpha = alpha
     self.writer = writer
-
+    self.test_mode = test_mode
     '''
     Pre-processing / Stem Layers
     '''
-    # Create a pre-processing / 'stem' operation that is a sort of preprocessing layer before our hierarchical network
-    channels_start = channels_start * stem_multiplier
-    self.pre_processing = nn.Sequential(
-        # Number of filters is specified by channels_start -> thus increasing feature dimension
-        nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
-        # Normalization in the regular sense - acts as a regularizer
-        nn.BatchNorm2d(channels_start)
-    )
+    if not test_mode:
+      # Create a pre-processing / 'stem' operation that is a sort of preprocessing layer before our hierarchical network
+      channels_start = channels_start * stem_multiplier
+      self.pre_processing = nn.Sequential(
+          # Number of filters is specified by channels_start -> thus increasing feature dimension
+          nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
+          # Normalization in the regular sense - acts as a regularizer
+          nn.BatchNorm2d(channels_start)
+      )
 
     '''
     Main Network: Top-Level DAG created here
@@ -231,17 +233,16 @@ class Model(nn.Module):
       channels_in=channels_start        
     )
 
-
-
     '''
     Post-processing Layers
     '''
-    # Penultimate Layer: Global average pooling to downsample feature maps to single value
-    self.global_avg_pooling = nn.AdaptiveAvgPool2d(1)
+    if not test_mode:
+      # Penultimate Layer: Global average pooling to downsample feature maps to single value
+      self.global_avg_pooling = nn.AdaptiveAvgPool2d(1)
 
-    # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
-    # Linear transformation without activation function
-    self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
+      # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
+      # Linear transformation without activation function
+      self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
 
   def forward(self, x): 
     '''
@@ -251,7 +252,8 @@ class Model(nn.Module):
     '''
     Pre-processing / Stem Layers
     '''
-    x = self.pre_processing(x)
+    if not self.test_mode:
+      x = self.pre_processing(x)
 
     '''
     Main model - identical to HierarchicalOperation.forward in this section
@@ -264,17 +266,19 @@ class Model(nn.Module):
     '''
     Post-processing Neural Network Layers
     ''' 
+    if not self.test_mode:
+      # Global Avg Pooling
+      y = self.global_avg_pooling(y)
 
-    # Global Avg Pooling
-    y = self.global_avg_pooling(y)
+      # Flatten
+      y = y.view(y.size(0), -1) 
 
-    # Flatten
-    y = y.view(y.size(0), -1) 
+      # Classifier
+      logits = F.softmax(self.classifer(y), dim=-1)
 
-    # Classifier
-    logits = F.softmax(self.classifer(y), dim=-1)
-
-    return logits
+      return logits
+    else:
+      return y
 
 class ModelController(nn.Module):
   '''
@@ -284,7 +288,7 @@ class ModelController(nn.Module):
 
   get_alpha_level(level) -> returns parameter (yes singular, as the whole tensor is wrapped as one parameter) corresponding to alpha_level
   '''
-  def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion, writer=None):
+  def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion, writer=None, test_mode=False):
     '''
     - Initializes member variables
     - Registers alpha parameters by creating a dummy alpha using the constructor and using get_alpha_level to get the alpha for a given level. This tensor is wrapped with nn.Parameter to indicate that is a Parameter for this controller (thus requires gradient computation with respect to itself). This nn.Parameter is added to the nn.ParameterList that is self.alphas.
@@ -306,46 +310,29 @@ class ModelController(nn.Module):
     self.writer = writer 
 
     # Register Alpha parameters
-    # Initial Alpha
-    alpha = Alpha(
+    # Initialize Alpha
+    self.alpha = Alpha(
       num_levels=self.num_levels,
       num_nodes_at_level=self.num_nodes_at_level,
       num_ops_at_level=self.num_ops_at_level
     )
-    self.alpha = nn.ParameterList() # List of parameters: each alpha_i is a parameter
-    for level in range(0, num_levels):
-      self.alpha.append(nn.Parameter(alpha.get_alpha_level(level)))
+    # Make self.alphas a list of all the parameters
+    self.alpha_as_torch_param_list = nn.ParameterList()
+    for level in range(0, self.alpha.num_levels):
+      self.alpha_as_torch_param_list.extend(self.alpha.get_alpha_level(level))
     
     # Initialize model with initial alpha
     self.model = Model(
-          alpha=alpha,
+          alpha=self.alpha,
           primitives=self.primitives,
           channels_in=self.channels_in,
           channels_start=self.channels_start,
           stem_multiplier=self.stem_multiplier,
           num_classes=self.num_classes,
-          writer=writer)
+          writer=writer,
+          test_mode=test_mode)
 
   def forward(self, x):
-    # Initialize alpha from self.alpha parameter list
-    alpha = Alpha(
-      num_levels=self.num_levels,
-      num_nodes_at_level=self.num_nodes_at_level,
-      num_ops_at_level=self.num_ops_at_level
-    )
-    for level in range(0, alpha.num_levels):
-      alpha.set_alpha_level(level, self.alpha[level])
-
-    # Initialize model with new alpha
-    self.model = Model(
-          alpha=alpha,
-          primitives=self.primitives,
-          channels_in=self.channels_in,
-          channels_start=self.channels_start,
-          stem_multiplier=self.stem_multiplier,
-          num_classes=self.num_classes,
-          writer=self.writer)
-
     return self.model(x)
 
   def loss(self, X, y):
@@ -353,7 +340,7 @@ class ModelController(nn.Module):
       return self.loss_criterion(logits, y)
 
   def get_alpha_level(self, level):
-    return self.alpha[level]
+    return self.alpha.get_alpha_level(level)
 
   def get_weights(self):
-    return list(self.model.parameters())
+    return self.model.parameters()

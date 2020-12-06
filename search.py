@@ -24,12 +24,12 @@ WEIGHTS_WEIGHT_DECAY = 1.
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 1
+EPOCHS = 100
 BATCH_SIZE = 100
 
 # ALPHA Optimizer Config
 ALPHA_WEIGHT_DECAY = 0
-ALPHA_LR = .1
+ALPHA_LR = .01
 
 # HDARTS Config
 NUM_LEVELS = 2
@@ -84,7 +84,7 @@ class HDARTS:
         alpha_optim = []
         for level in range(0, NUM_LEVELS):
             alpha_optim.append(torch.optim.Adam(
-                    params=[model.get_alpha_level(level)],
+                    params=model.get_alpha_level(level),
                     lr=ALPHA_LR,
                     betas=(0.5, 0.999),
                     weight_decay=ALPHA_WEIGHT_DECAY))
@@ -121,8 +121,16 @@ class HDARTS:
 
             # TODO: Log alpha_i for each level i
             for level in range(0, self.num_levels):
-                print(level, model.alpha[level])
-
+                print("Level: ", level)
+                for operation in model.alpha.parameters[level]:
+                    print("Operation: ")
+                    for edge in sorted(operation):
+                        print("Edge: ", edge)
+                        for weight in operation[edge]:
+                            print(weight, end=" ")
+                        print("")
+                print("\n")
+                
             # training
             self.train(
                 train_loader=train_loader,
