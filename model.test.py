@@ -1,8 +1,12 @@
-import unittest
-from torch import tensor, zeros
 from alpha import Alpha
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from datetime import datetime
 from model import MixedOperation, HierarchicalOperation, Model, ModelController
+from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from torch import tensor, zeros
+from torch.utils.tensorboard.writer import SummaryWriter
+import torch
+import torch.nn as nn
+import unittest
 
 class TestMixedOperation(unittest.TestCase):
 
@@ -176,7 +180,73 @@ class TestModel(unittest.TestCase):
       assert(sum == 1)
 
 class TestModelController(unittest.TestCase):
-  pass 
+  def test_times_two_function(self):
+
+    # Hyperparameters
+    num_levels = 2 
+    num_nodes_at_level = {0: 2, 1: 2}
+    num_ops_at_level = {0: LEN_SIMPLE_OPS, 1: 1}
+    num_epochs = 10
+
+    # Initialize tensorboard writer
+    dt_string = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+    writer = SummaryWriter('test/test_double_func/' + str(dt_string) + "/")
+  
+    # Define model 
+    model = ModelController(
+            num_levels=num_levels,
+            num_nodes_at_level=num_nodes_at_level,
+            num_ops_at_level=num_ops_at_level,
+            primitives=SIMPLE_OPS,
+            channels_in=1,
+            channels_start=1,
+            stem_multiplier=1,
+            num_classes=1,
+            loss_criterion=nn.L1Loss,
+            writer=writer,
+            test_mode=True
+        )
+
+    # Input
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1., 1.],
+        [1., 1.]
+      ]
+    ]
+    ])
+
+    # Expected output
+    y = tensor([
+    [
+      # feature 1
+      [
+        [2., 2.],
+        [2., 2.]
+      ]
+    ]
+    ])
+
+    # Alpha Optimizer - one for each level
+    alpha_optim = []
+    for level in range(0, num_levels):
+        alpha_optim.append(torch.optim.Adam(
+                params=model.get_alpha_level(level),
+                lr=0.1,
+                betas=(0.5, 0.999),
+                weight_decay=1))
+    
+    for _ in range(0, num_epochs):
+      # Alpha Gradient Steps for each level
+      for level in range(0, num_levels):
+        alpha_optim[level].zero_grad()
+        logits = model(x)
+        loss = model.loss_criterion(logits, y)
+        print(loss)
+        loss.backward()
+        alpha_optim[level].step()
 
 if __name__ == '__main__':
   unittest.main()
