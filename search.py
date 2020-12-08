@@ -24,7 +24,7 @@ WEIGHTS_WEIGHT_DECAY = 1.
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 100
+EPOCHS = 10000
 BATCH_SIZE = 100
 
 # ALPHA Optimizer Config
@@ -77,21 +77,18 @@ class HDARTS:
         w_optim = torch.optim.SGD(
             params=model.get_weights(),
             lr=WEIGHTS_LR,
-            momentum=WEIGHTS_MOMENTUM,
-            weight_decay=WEIGHTS_WEIGHT_DECAY)
+            momentum=WEIGHTS_MOMENTUM)
 
         # Alpha Optimizer - one for each level
         alpha_optim = []
         for level in range(0, NUM_LEVELS):
             alpha_optim.append(torch.optim.Adam(
                     params=model.get_alpha_level(level),
-                    lr=ALPHA_LR,
-                    betas=(0.5, 0.999),
-                    weight_decay=ALPHA_WEIGHT_DECAY))
+                    lr=ALPHA_LR))
 
 
         # Train / Validation Split
-        n_train = len(train_data) // 100
+        n_train = len(train_data) // 10000
         split = n_train // 2
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
@@ -177,7 +174,7 @@ class HDARTS:
 
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
-                #alpha_optim[level].zero_grad()
+                alpha_optim[level].zero_grad()
                 logits = model(trn_X)
                 loss = model.loss_criterion(logits, trn_y)
                 loss.backward()

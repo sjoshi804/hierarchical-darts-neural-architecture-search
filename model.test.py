@@ -232,16 +232,12 @@ class TestModelController(unittest.TestCase):
     for level in range(0, num_levels):
       alpha_optim.append(torch.optim.Adam(
                 params=model.get_alpha_level(level),
-                lr=0.1,
-                betas=(0.5, 0.999),
-                weight_decay=1))
-      for param in model.get_alpha_level(level):
-          param.register_hook(lambda grad: print(grad))
+                lr=0.1))
 
     for _ in range(0, num_epochs):
       # Alpha Gradient Steps for each level
-      model.parameters().zero_grad()
       for level in range(0, num_levels):
+        alpha_optim[level].zero_grad()
         loss = model.loss_criterion(model(x), y)
         print(loss)
         loss.backward()
@@ -273,9 +269,7 @@ class TestModelController(unittest.TestCase):
 
     alpha_optim = torch.optim.Adam(
                 params=model.parameters(),
-                lr=0.1,
-                betas=(0.5, 0.999),
-                weight_decay=1)
+                lr=0.1)
     '''
     for param in model.parameters():
       param.register_hook(
@@ -284,14 +278,10 @@ class TestModelController(unittest.TestCase):
             ) 
   '''
     for _ in range(0, num_epochs):
+      alpha_optim.zero_grad()
       loss = nn.L1Loss()(model(x), y)
       loss.backward()
-      #print(loss)
-      #alpha_optim.step()
-      for param in model.parameters():
-        param.data -= param.grad
-      for param in model.parameters():
-        param.grad.zero_()
+      alpha_optim.step()
       print(loss)
 
 
@@ -401,15 +391,8 @@ class TestModelController(unittest.TestCase):
       print(loss)
 
       # Second level
-
-
     for param in model.parameters():
       print(param)
     
-    
-
-
-    
-
 if __name__ == '__main__':
-  TestModelController().test_mixed_op_convergence()
+  TestModelController().test_times_two_function()
