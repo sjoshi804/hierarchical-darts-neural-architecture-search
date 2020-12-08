@@ -19,18 +19,20 @@ Useful Links:
 - https://datascience.stackexchange.com/questions/13405/what-is-affine-transformation-in-regards-to-neural-networks
 
 '''
-
+## FIXME: 
 SIMPLE_OPS = {
+  "zero": lambda C, stride, affine: Zero(C, C, stride),
   "double": lambda C, stride, affine: Double(C, stride),
-  "triple": lambda C, stride, affine: Triple(C, stride)
+  #"triple": lambda C, stride, affine: Triple(C, stride)
 }
 
 LEN_SIMPLE_OPS = len(SIMPLE_OPS)
-
+##FIXME: 
 MANDATORY_OPS = {
   "identity": lambda C, stride, affine: Identity(C, stride),
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
+
 
 class Zero(nn.Module):
 

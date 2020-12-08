@@ -1,6 +1,7 @@
 from typing import Dict 
 from torch import tensor, zeros
 import torch.nn as nn
+from torch.nn.parameter import Parameter
 
 class Alpha:
     '''
@@ -57,9 +58,10 @@ class Alpha:
             for dict in alpha_i:
                 for node_a in range(0, num_nodes_at_level[i]):
                     for node_b in range(node_a + 1, num_nodes_at_level[i]):
-                        extra_ops = 1
+                        #FIXME: Change back to correct values
+                        extra_ops = 0
                         if i == 0:
-                            extra_ops = 2
+                            extra_ops = 0
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
                         dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))

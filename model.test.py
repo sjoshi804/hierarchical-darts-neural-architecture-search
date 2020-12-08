@@ -1,7 +1,7 @@
 from alpha import Alpha
 from datetime import datetime
 from model import MixedOperation, HierarchicalOperation, Model, ModelController
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from operations import Double, Identity, SIMPLE_OPS, LEN_SIMPLE_OPS, Triple, Zero
 from torch import tensor, zeros
 from torch.utils.tensorboard.writer import SummaryWriter
 import torch
@@ -180,13 +180,13 @@ class TestModel(unittest.TestCase):
       assert(sum == 1)
 
 class TestModelController(unittest.TestCase):
+  
   def test_times_two_function(self):
-
     # Hyperparameters
     num_levels = 2 
     num_nodes_at_level = {0: 2, 1: 2}
     num_ops_at_level = {0: LEN_SIMPLE_OPS, 1: 1}
-    num_epochs = 10
+    num_epochs = 100
 
     # Initialize tensorboard writer
     dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
@@ -230,22 +230,186 @@ class TestModelController(unittest.TestCase):
     # Alpha Optimizer - one for each level
     alpha_optim = []
     for level in range(0, num_levels):
-        alpha_optim.append(torch.optim.Adam(
+      alpha_optim.append(torch.optim.Adam(
                 params=model.get_alpha_level(level),
                 lr=0.1,
                 betas=(0.5, 0.999),
                 weight_decay=1))
-    
+      for param in model.get_alpha_level(level):
+          param.register_hook(lambda grad: print(grad))
+
     for _ in range(0, num_epochs):
       # Alpha Gradient Steps for each level
+      model.parameters().zero_grad()
       for level in range(0, num_levels):
-        alpha_optim[level].zero_grad()
-        logits = model(x)
-        loss = model.loss_criterion(logits, y)
-        print(model(x))
+        loss = model.loss_criterion(model(x), y)
         print(loss)
         loss.backward()
         alpha_optim[level].step()
+  
+  def test_mixed_op_convergence(self):
+    # Input
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1.]
+      ]
+    ]
+    ])
+
+    # Expected output
+    y = tensor([
+    [
+      # feature 1
+      [
+        [2.]
+      ]
+    ]
+    ])
+
+    num_epochs = 100
+    model = MixedOperation([Zero(1, 1, 1), Double(1, 1)], nn.Parameter(tensor([0., 0.])))
+
+    alpha_optim = torch.optim.Adam(
+                params=model.parameters(),
+                lr=0.1,
+                betas=(0.5, 0.999),
+                weight_decay=1)
+    '''
+    for param in model.parameters():
+      param.register_hook(
+          lambda grad: 
+            print(grad)
+            ) 
+  '''
+    for _ in range(0, num_epochs):
+      loss = nn.L1Loss()(model(x), y)
+      loss.backward()
+      #print(loss)
+      #alpha_optim.step()
+      for param in model.parameters():
+        param.data -= param.grad
+      for param in model.parameters():
+        param.grad.zero_()
+      print(loss)
+
+
+    
+  def test_hierarchial_operation_convergence(self):
+
+    print("Hierarchical Operation")
+
+    # Input
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1.]
+      ]
+    ]
+    ])
+
+    # Expected output
+    y = tensor([
+    [
+      # feature 1
+      [
+        [2.]
+      ]
+    ]
+    ])
+
+    num_epochs = 1000
+    operations = {}
+    operations[str((0, 1))] = MixedOperation([Double(1, 1), Triple(1, 1), Zero(1, 1, 1), Identity(1, 1)], nn.Parameter(tensor([0., 0., 0., 0.])))
+    model = HierarchicalOperation(2, operations)
+
+    print(list(model.parameters()))
+    
+    alpha_optim = torch.optim.Adam(
+            params=model.parameters(),
+            lr=0.1,
+            betas=(0.5, 0.999),
+            weight_decay=1)
+
+    for param in model.parameters():
+      param.register_hook(
+          lambda grad: 
+            print(grad)
+            ) 
+
+    for _ in range(0, num_epochs):
+      alpha_optim.zero_grad()
+      loss = nn.L1Loss()(model(x), y)
+      loss.backward()
+      print(loss)
+      alpha_optim.step()
+
+    for param in model.parameters():
+      print(param)
+
+  def test_mixed_of_hierarchical_operation(self):
+    # Input
+    x = tensor([
+    [
+      # feature 1
+      [
+        [1.]
+      ]
+    ]
+    ])
+
+    # Expected output
+    y = tensor([
+    [
+      # feature 1
+      [
+        [2.]
+      ]
+    ]
+    ])
+
+    num_epochs = 1000
+    sub_operations = {}
+    sub_operations[str((0, 1))] = MixedOperation([Double(1, 1), Triple(1, 1), Zero(1, 1, 1), Identity(1, 1)], nn.Parameter(tensor([0., 0., 0., 0.])))
+    ho = HierarchicalOperation(2, sub_operations)
+
+    operations = [
+      ho, 
+      Zero(1, 1, 1)
+    ]
+
+    model = MixedOperation(operations, nn.Parameter(tensor([0., 0.])))
+
+    alpha_optim_1 = torch.optim.Adam(
+            params=model.parameters()[0],
+            lr=0.1,
+            betas=(0.5, 0.999),
+            weight_decay=1)
+
+    alpha_optim_0 = torch.optim.Adam(
+        params=model.parameters()[1],
+        lr=0.1,
+        betas=(0.5, 0.999),
+        weight_decay=1)
+
+    for _ in range(0, num_epochs):
+      # First level
+      loss = nn.L1Loss()(model(x), y)
+      loss.backward()
+      print(loss)
+
+      # Second level
+
+
+    for param in model.parameters():
+      print(param)
+    
+    
+
+
+    
 
 if __name__ == '__main__':
-  unittest.main()
+  TestModelController().test_mixed_op_convergence()

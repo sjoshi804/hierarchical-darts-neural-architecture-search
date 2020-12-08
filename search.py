@@ -33,7 +33,7 @@ ALPHA_LR = .01
 
 # HDARTS Config
 NUM_LEVELS = 2
-NUM_NODES_AT_LEVEL = { 0: 2, 1: 2 }
+NUM_NODES_AT_LEVEL = { 0: 3, 1: 2 }
 NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 1}
 CHANNELS_START = 1
 STEM_MULTIPLIER = 1
@@ -120,6 +120,7 @@ class HDARTS:
             #lr = lr_scheduler.get_last_lr()
 
             # TODO: Log alpha_i for each level i
+            '''
             for level in range(0, self.num_levels):
                 print("Level: ", level)
                 for operation in model.alpha.parameters[level]:
@@ -130,7 +131,7 @@ class HDARTS:
                             print(weight, end=" ")
                         print("")
                 print("\n")
-                
+            '''
             # training
             self.train(
                 train_loader=train_loader,
@@ -176,7 +177,7 @@ class HDARTS:
 
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
-                alpha_optim[level].zero_grad()
+                #alpha_optim[level].zero_grad()
                 logits = model(trn_X)
                 loss = model.loss_criterion(logits, trn_y)
                 loss.backward()

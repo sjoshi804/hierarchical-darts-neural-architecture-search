@@ -33,11 +33,11 @@ class MixedOperation(nn.Module):
     # Superclass constructor
     super().__init__()
 
+    # Initialize weights using alpha_e
+    self.alpha_e = alpha_e
+
     # Module List
     self.ops = nn.ModuleList(operations)
-
-    # Initialize alpha edge 
-    self.alpha_e = alpha_e
 
     # Channels out = channels out of any operation in self._ops as all are same, 
     # recursively will have channels_out defined or primitive will have channels_out defined
@@ -47,8 +47,7 @@ class MixedOperation(nn.Module):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    weights = F.softmax(self.alpha_e, dim=-1)
-    return sum(w * op(x) for w, op in zip(weights, self.ops))
+    return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e, dim=-1), self.ops))
 
 class HierarchicalOperation(nn.Module):
   '''
@@ -261,7 +260,8 @@ class Model(nn.Module):
 
     y = self.top_level_op(x)
     if self.writer is not None:
-      self.writer.add_graph(self.top_level_op, x)
+      pass
+      #self.writer.add_graph(self.top_level_op, x)
 
     '''
     Post-processing Neural Network Layers
