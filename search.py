@@ -19,7 +19,7 @@ class HDARTS:
         # print('config should be 200.  Its %d' % (2* config.NUM_LEVELS))
         # sys.exit()
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
-        self.writer = SummaryWriter(config.LOGDIR + "/" + str(self.dt_string) + "/")
+        self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
         torch.cuda.set_device(0)  #FIXME: Sidd could this be a problem?? (config.gpus[0])
         
