@@ -79,9 +79,9 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--name', default='HDARTS')
     parser.add_argument('--datapath', default=DATAPATH)
     parser.add_argument('--dataset', default='mnist', help='cifar10 / mnist / fashionmnist')
-    parser.add_argument('--num_levels', default=NUM_LEVELS)
-    parser.add_argument('--stem_multiplier', default=STEM_MULTIPLIER)
-    parser.add_argument('--channels_start', default=CHANNELS_START)
+    parser.add_argument('--num_levels', type=int, default=NUM_LEVELS)
+    parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
+    parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
     parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='batch size')
 
     parser.add_argument('--num_nodes_at_level', type=eval, default=str(NUM_NODES_AT_LEVEL), 
