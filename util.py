@@ -3,17 +3,17 @@ get_data, Average_Meter: Borrowed from https://github.com/khanrc/pt.darts
 '''
 
 # External Imports
-from model import ModelController
 from alpha import Alpha
+from functools import wraps
+from model import ModelController
+from time import time
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import torchvision.datasets as dset
-from functools import wraps
-from time import time
-import shutil
 import os
 import pickle
+import shutil
+import torch
+import torchvision.datasets as dset
 
 # Internal Imports
 import preProcess

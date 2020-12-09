@@ -18,3 +18,15 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 | Dataset  | Test Accuracy  |  GPU Time (Days) |
 |---|---|---|
 | MNIST |   |   |
+
+# Top Tasks
+
+FIXME: modelcontroller.weights()
+
+TODO: Load model from checkpoint and continue training 
+
+TODO: Allow CUDA to be turned off in model.py etc.
+
+TODO: Apply max to get final operations
+
+TODO: Visualize operations learned

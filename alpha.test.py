@@ -1,6 +1,6 @@
 # External imports
-import unittest
 from torch import zeros
+import unittest
 
 # Internal imports
 from alpha import Alpha
@@ -106,12 +106,15 @@ class AlphaTest(unittest.TestCase):
                         assert(alpha_i[op_num][(node_a, node_b)].equal(zeros(num_parameters)))
 
     def test_input_validation(self):
+        #TODO: input validation test
         raise NotImplementedError
 
     def test_get_alpha_level(self):
+        #TODO: get alpha level test
         raise NotImplementedError
 
     def test_set_alpha_level(self):
+        #TODO: set alpha level test
         raise NotImplementedError
 
 if __name__ == '__main__':

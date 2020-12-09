@@ -2,8 +2,8 @@
 Borrowed from https://github.com/khanrc/pt.darts
 '''
 
-import torch
 import numpy as np
+import torch
 import torchvision.transforms as transforms
 
 class Cutout(object):
