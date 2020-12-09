@@ -6,7 +6,7 @@ import torch.nn as nn
  
 # Internal Imports
 from config import SearchConfig
-from model import ModelController
+from model_controller import ModelController
 from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
 from torch.utils.tensorboard import SummaryWriter
 from util import get_data, save_checkpoint, accuracy, AverageMeter
@@ -15,11 +15,13 @@ config = SearchConfig()
  
 class HDARTS:
     def __init__(self):
-        print(config)
+
+        # print('config should be 200.  Its %d' % (2* config.NUM_LEVELS))
+        # sys.exit()
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         self.writer = SummaryWriter(config.LOGDIR + "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
-        torch.cuda.set_device(config.gpus[0])
+        torch.cuda.set_device(0)  #FIXME: Sidd could this be a problem?? (config.gpus[0])
         
     def run(self):
         # Get Data & MetaData
@@ -91,7 +93,9 @@ class HDARTS:
         for epoch in range(config.EPOCHS):
             lr_scheduler.step()
  
-            self.writer.add_scalar("lr/weights", lr_scheduler.get_last_lr())
+            #FIXME Sidd. - This causes an error
+            #Error: NotImplementedError: Got <class 'list'>, but numpy array, torch tensor, or caffe2 blob name are expected.
+            #self.writer.add_scalar("lr/weights", lr_scheduler.get_last_lr())
  
             # Training
             self.train(
