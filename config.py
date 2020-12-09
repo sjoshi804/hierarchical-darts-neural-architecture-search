@@ -14,6 +14,7 @@ from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
 
 # DATASET Config
 dir_path = os.getcwd()
+DATASET =  "cifar10"#"mnist"
 DATAPATH = os.path.join(dir_path, "data")
 
 # WEIGHTS Config
@@ -73,12 +74,13 @@ class BaseConfig(argparse.Namespace):
     return text
 
 
+
 class SearchConfig(BaseConfig):
   def build_parser(self):
     parser = get_parser("Search config")
     parser.add_argument('--name', default='HDARTS')
     parser.add_argument('--datapath', default=DATAPATH)
-    parser.add_argument('--dataset', default='mnist', help='cifar10 / mnist / fashionmnist')
+    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / fashionmnist')
     parser.add_argument('--num_levels', type=int, default=NUM_LEVELS)
     parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
     parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
