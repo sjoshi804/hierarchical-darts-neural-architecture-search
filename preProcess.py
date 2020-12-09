@@ -32,7 +32,7 @@ class Cutout(object):
 def data_transforms(dataset, cutout_length):
 
     dataset = dataset.lower()
-    if dataset == 'mnist':
+    if dataset in ('mnist', 'cifar10'):
         # Initialized to avoid expensive recomputation
         MEAN = [0.13066051707548254]
         STD = [0.30810780244715075]
