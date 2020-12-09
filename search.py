@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 import os 
+from datetime import datetime
 
 # Internal Imports
 from model import ModelController
@@ -24,17 +25,17 @@ WEIGHTS_WEIGHT_DECAY = 1.
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 200
-BATCH_SIZE = 100
+EPOCHS = 250
+BATCH_SIZE = 200
 
 # ALPHA Optimizer Config
 ALPHA_WEIGHT_DECAY = 0
 ALPHA_LR = .01
 
 # HDARTS Config
-NUM_LEVELS = 3
-NUM_NODES_AT_LEVEL = { 0: 6, 1: 4, 2: 2  }
-NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 3, 2: 1}
+NUM_LEVELS = 2
+NUM_NODES_AT_LEVEL = { 0: 6, 1: 3}
+NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 3}
 CHANNELS_START = 1
 STEM_MULTIPLIER = 1
 
@@ -46,7 +47,8 @@ CHECKPOINT_PATH = os.path.join(dir_path, "checkpoints")
 class HDARTS:
     def __init__(self):
         self.num_levels = NUM_LEVELS
-        self.writer = SummaryWriter('runs/' + DATASET)
+        dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+        self.writer = SummaryWriter('runs/' + str(dt_string) + "/")
         torch.cuda.set_device(0)
 
     def run(self):
