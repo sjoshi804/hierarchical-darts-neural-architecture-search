@@ -15,15 +15,6 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 ## Results
 
-| Dataset  | Test Accuracy  |  GPU Time (Days) |
+| Dataset  | Validation Accuracy  |  GPU Time |
 |---|---|---|
-| MNIST |   |   |
-
-
-Done: Make every inner most value in alpha a nn.Parameter (Alpha)
-
-Done: Find a new way to get alpha (ModelController) that conforms with - Did this by registering the self.alphas as a concatenation of all the alphas for each level and then for the get_alpha_level(level) function of model controller using the alpha object (self.alpha.get_alpha_level(level))
-
-Done: Instead of constructing network on init, construct on .setAlpha (Model) - assuming this done because the mixed operation forward operation is the only bit tha actually depends on the actual values of the alpha parameters and would be called inside the higher level call to forward
-
-TODO: Investigate tensorboard plot inside mixed op first and then at higher levels
+| MNIST |  63% | 2 hours  |
