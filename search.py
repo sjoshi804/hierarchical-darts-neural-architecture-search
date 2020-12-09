@@ -47,6 +47,7 @@ class HDARTS:
     def __init__(self):
         self.num_levels = NUM_LEVELS
         self.writer = SummaryWriter('runs/' + DATASET)
+        torch.cuda.set_device(0)
 
     def run(self):
         # Get Data & MetaData
@@ -58,6 +59,7 @@ class HDARTS:
 
         # Set Loss Criterion
         loss_criterion = nn.CrossEntropyLoss()
+        loss_criterion = loss_criterion.cuda()
 
         # Initialize model
         model = ModelController(
@@ -72,6 +74,7 @@ class HDARTS:
             loss_criterion=loss_criterion,
             writer=self.writer
         )
+        model = model.cuda()
 
         # Weights Optimizer
         w_optim = torch.optim.SGD(
@@ -171,6 +174,8 @@ class HDARTS:
 
         for step, ((trn_X, trn_y), (val_X, val_y)) in enumerate(zip(train_loader, valid_loader)):
             N = trn_X.size(0)
+            trn_X = trn_X.cuda()
+            trn_y = trn_y.cuda()
 
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
@@ -221,6 +226,7 @@ class HDARTS:
             for step, (X, y) in enumerate(valid_loader):
                 N = X.size(0)
                 logits = model(X)
+                y = y.cuda()
                 loss = model.loss_criterion(logits, y)
                 prec1, prec5 = accuracy(logits, y, topk=(1, 5))
                 losses.update(loss.item(), N)

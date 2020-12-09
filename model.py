@@ -252,7 +252,9 @@ class Model(nn.Module):
     Pre-processing / Stem Layers
     '''
     if not self.test_mode:
+      x = x.cuda()
       x = self.pre_processing(x)
+      x = x.cuda()
 
     '''
     Main model - identical to HierarchicalOperation.forward in this section
@@ -331,6 +333,7 @@ class ModelController(nn.Module):
           num_classes=self.num_classes,
           writer=writer,
           test_mode=test_mode)
+    self.model = self.model.cuda()
 
   def forward(self, x):
     return self.model(x)
