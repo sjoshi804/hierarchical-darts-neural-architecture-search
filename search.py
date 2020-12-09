@@ -26,7 +26,7 @@ WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
 EPOCHS = 250
-BATCH_SIZE = 200
+BATCH_SIZE = 100
 
 # ALPHA Optimizer Config
 ALPHA_WEIGHT_DECAY = 0
@@ -93,7 +93,7 @@ class HDARTS:
 
 
         # Train / Validation Split
-        n_train = len(train_data) // 100
+        n_train = len(train_data) // 10
         split = n_train // 2
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
