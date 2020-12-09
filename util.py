@@ -5,7 +5,7 @@ get_data, Average_Meter: Borrowed from https://github.com/khanrc/pt.darts
 # External Imports
 from alpha import Alpha
 from functools import wraps
-from model import ModelController
+from model_controller import ModelController
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
