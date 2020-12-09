@@ -27,6 +27,9 @@ def get_data(dataset_name, data_path, cutout_length, validation):
     if dataset_name == 'mnist':
         dataset = dset.MNIST
         n_classes = 10
+    elif dataset_name == 'cifar10':
+        dataset = dset.CIFAR10
+        n_classes = 10
     else:
         raise ValueError('Unexpected Dataset = {}'.format(dataset_name))
 
@@ -34,8 +37,15 @@ def get_data(dataset_name, data_path, cutout_length, validation):
     trn_transform, val_transform = preProcess.data_transforms(dataset_name, cutout_length)
     trn_data = dataset(root=data_path, train=True, download=True, transform=trn_transform)
 
+
+    if dataset_name == 'mnist':
+        shape = trn_data.train_data.shape
+    elif dataset_name == 'cifar10':
+        shape = trn_data.data.shape
+            
+
     # assuming shape is NHW or NHWC
-    shape = trn_data.train_data.shape
+    # shape = trn_data.train_data.shape
     input_channels = 3 if len(shape) == 4 else 1
     assert shape[1] == shape[2], "not expected shape = {}".format(shape)
     input_size = shape[1]
