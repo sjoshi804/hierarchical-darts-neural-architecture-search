@@ -1,4 +1,5 @@
 # External imports
+import torch 
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -82,9 +83,9 @@ class Model(nn.Module):
     Pre-processing / Stem Layers
     '''
     if not self.test_mode:
-      x = x.cuda()
+      if (torch.cuda.is_available()):
+        x = x.cuda()
       x = self.pre_processing(x)
-      x = x.cuda()
 
     '''
     Main model - identical to HierarchicalOperation.forward in this section

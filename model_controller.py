@@ -1,5 +1,6 @@
 # External Imports
 from typing import Dict 
+import torch
 import torch.nn as nn 
 
 # Internal Imports
@@ -57,7 +58,9 @@ class ModelController(nn.Module):
                 num_classes=self.num_classes,
                 writer=writer,
                 test_mode=test_mode)
-        self.model = self.model.cuda()
+        
+        if not test_mode and torch.cuda.is_available():
+            self.model = self.model.cuda()
 
     def forward(self, x):
         return self.model(x)

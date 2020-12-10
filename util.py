@@ -218,7 +218,10 @@ def view_classify(img, ps):
 
 
 def parse_gpus(gpus):
-    if gpus == 'all':
-        return list(range(torch.cuda.device_count()))
+    if torch.cuda.is_available():
+        if gpus == 'all':
+            return list(range(torch.cuda.device_count()))
+        else:
+            return [int(s) for s in gpus.split(',')]
     else:
-        return [int(s) for s in gpus.split(',')]
+        return [0]

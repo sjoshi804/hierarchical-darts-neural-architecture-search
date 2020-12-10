@@ -21,7 +21,10 @@ class HDARTS:
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
-        torch.cuda.set_device(0)  #FIXME: Sidd could this be a problem?? (config.gpus[0])
+
+        # Set gpu device if cuda is available
+        if torch.cuda.is_available():
+            torch.cuda.set_device(config.gpus[0]) 
         
     def run(self):
         # Get Data & MetaData
@@ -33,7 +36,8 @@ class HDARTS:
  
         # Set Loss Criterion
         loss_criterion = nn.CrossEntropyLoss()
-        loss_criterion = loss_criterion.cuda()
+        if torch.cuda.is_available():
+            loss_criterion = loss_criterion.cuda()
  
         # Initialize model
         model = ModelController(
@@ -49,7 +53,8 @@ class HDARTS:
             writer=self.writer
          )
 
-        model = model.cuda()
+        if torch.cuda.is_available():
+            model = model.cuda()
  
         # Weights Optimizer
         w_optim = torch.optim.SGD(
@@ -138,8 +143,9 @@ class HDARTS:
 
         for step, ((trn_X, trn_y), (val_X, val_y)) in enumerate(zip(train_loader, valid_loader)):
             N = trn_X.size(0)
-            trn_X = trn_X.cuda()
-            trn_y = trn_y.cuda()
+            if torch.cuda.is_available():
+                trn_X = trn_X.cuda()
+                trn_y = trn_y.cuda()
 
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
@@ -191,7 +197,10 @@ class HDARTS:
                 N = X.size(0)
 
                 logits = model(X)
-                y = y.cuda()
+                
+                if torch.cuda.is_available():
+                    y = y.cuda()   
+
                 loss = model.loss_criterion(logits, y)
 
                 prec1, prec5 = accuracy(logits, y, topk=(1, 5))
@@ -216,7 +225,6 @@ class HDARTS:
  
 if __name__ == "__main__":
     if not torch.cuda.is_available():
-        print('ERROR: No GPU Device Available')
-        sys.exit(1)
+        print('No GPU Device Available')
     nas = HDARTS()
     nas.run()

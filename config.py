@@ -14,7 +14,7 @@ from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
 
 # DATASET Config
 dir_path = os.getcwd()
-DATASET =  "cifar10"#"mnist"
+DATASET =  "mnist"
 DATAPATH = os.path.join(dir_path, "data")
 
 # WEIGHTS Config
@@ -52,10 +52,13 @@ def get_parser(name):
   return parser
 
 def parse_gpus(gpus):
-  if gpus == 'all':
-      return list(range(torch.cuda.device_count()))
-  else:
-      return [int(s) for s in gpus.split(',')]
+    if torch.cuda.is_available():
+        if gpus == 'all':
+            return list(range(torch.cuda.device_count()))
+        else:
+            return [int(s) for s in gpus.split(',')]
+    else:
+        return [0]
 
 class BaseConfig(argparse.Namespace):
   def print_params(self, prtf=print):
