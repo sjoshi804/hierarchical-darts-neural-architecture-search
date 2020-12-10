@@ -46,7 +46,7 @@ class Zero(nn.Module):
       #Add extra channels to make channels_out sufficient, this will break if stride!=1 anywhere in model
       feature_map = [[0.] * len(x[0][0][0])] * len(x[0][0])
       output = tensor(([[feature_map] * (self.channels_out)] * len(x)))
-      return output
+      return output.to(x.device)
     elif (self.channels_in > self.channels_out ):
       raise Exception("Assumption violated: channels_in > channels_out")
 
