@@ -88,19 +88,10 @@ class HDARTS:
                                                 sampler=valid_sampler,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
-         
-        # Learning Rate scheduler
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            w_optim,  config.EPOCHS, eta_min= config.WEIGHTS_LR_MIN)
- 
+                                                
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
-            lr_scheduler.step()
- 
-            #FIXME Sidd. - This causes an error
-            #Error: NotImplementedError: Got <class 'list'>, but numpy array, torch tensor, or caffe2 blob name are expected.
-            #self.writer.add_scalar("lr/weights", lr_scheduler.get_last_lr())
  
             # Training
             self.train(

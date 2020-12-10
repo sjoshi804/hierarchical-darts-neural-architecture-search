@@ -21,12 +21,13 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 # Top Tasks
 
-FIXME: modelcontroller.weights()
-
 TODO: Load model from checkpoint and continue training 
-
-TODO: Allow CUDA to be turned off in model.py etc.
 
 TODO: Apply max to get final operations
 
 TODO: Visualize operations learned
+
+TODO: Learning rate scheduler
+
+TODO: Change initial weight on Zero operation to encourage sparsity
+
