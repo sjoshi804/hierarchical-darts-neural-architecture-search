@@ -115,7 +115,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--init_channels', type=int, default=16)
     parser.add_argument('--workers', type=int, default=1, help='# of workers')
     parser.add_argument('--logdir', default="runs", help="directory to write tensorboard logs to. Do not append /.")
-    parser.add_argument('--checkpoint_path', default="checkpoint", help="directory to save checkpoints in")
+    parser.add_argument('--checkpoint_path', default="checkpoints", help="directory to save checkpoints in")
 
     return parser
 
