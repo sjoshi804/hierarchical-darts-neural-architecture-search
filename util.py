@@ -39,7 +39,7 @@ def get_data(dataset_name, data_path, cutout_length, validation):
 
 
     if dataset_name == 'mnist':
-        shape = trn_data.train_data.shape
+        shape = trn_data.data.shape
     elif dataset_name == 'cifar10':
         shape = trn_data.data.shape
             
