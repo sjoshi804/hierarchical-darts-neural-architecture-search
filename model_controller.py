@@ -36,17 +36,12 @@ class ModelController(nn.Module):
         self.loss_criterion = loss_criterion
         self.writer = writer 
 
-        # Register Alpha parameters
         # Initialize Alpha
         self.alpha = Alpha(
             num_levels=self.num_levels,
             num_nodes_at_level=self.num_nodes_at_level,
             num_ops_at_level=self.num_ops_at_level
         )
-        # Make self.alphas a list of all the parameters
-        self.alpha_as_torch_param_list = nn.ParameterList()
-        for level in range(0, self.alpha.num_levels):
-            self.alpha_as_torch_param_list.extend(self.alpha.get_alpha_level(level))
 
         # Initialize model with initial alpha
         self.model = Model(
@@ -74,6 +69,10 @@ class ModelController(nn.Module):
     def get_alpha_level(self, level):
         return self.alpha.get_alpha_level(level)
 
-    # Get all the weights FIXME: currently the way this works recursively since MixedOperation has alpha parameters, this also returns alpha parameters which is undesirable
+    # Get all the weights parameters
     def get_weights(self):
-        return self.model.parameters()
+        weights = nn.ParameterList()
+        for name, param in self.named_parameters(recurse=True):
+            if 'alpha' not in name:
+                weights.append(param)
+        return weights
