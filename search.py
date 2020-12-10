@@ -146,12 +146,14 @@ class HDARTS:
             if torch.cuda.is_available():
                 trn_X = trn_X.cuda()
                 trn_y = trn_y.cuda()
+                val_X = val_X.cuda()
+                val_y = val_y.cuda()
 
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
                 alpha_optim[level].zero_grad()
-                logits = model(trn_X)
-                loss = model.loss_criterion(logits, trn_y)
+                logits = model(val_X)
+                loss = model.loss_criterion(logits, val_y)
                 loss.backward()
                 alpha_optim[level].step()
 
