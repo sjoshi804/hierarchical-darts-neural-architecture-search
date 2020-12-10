@@ -3,11 +3,12 @@ from datetime import datetime
 from os import sys
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard.summary import hparams
  
 # Internal Imports
 from config import SearchConfig
 from model_controller import ModelController
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from operations import OPS
 from torch.utils.tensorboard import SummaryWriter
 from util import get_data, save_checkpoint, accuracy, AverageMeter
  
@@ -16,8 +17,6 @@ config = SearchConfig()
 class HDARTS:
     def __init__(self):
 
-        # print('config should be 200.  Its %d' % (2* config.NUM_LEVELS))
-        # sys.exit()
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
@@ -25,7 +24,16 @@ class HDARTS:
         # Set gpu device if cuda is available
         if torch.cuda.is_available():
             torch.cuda.set_device(config.gpus[0]) 
-        
+
+        # Write config to tensorboard
+        hparams = {}
+        for key in config.__dict__:
+            if type(config.__dict__[key]) is dict or type(config.__dict__[key]) is list:
+                hparams[key] = str(config.__dict__[key])
+            else:
+                hparams[key] = config.__dict__[key]
+        self.writer.add_hparams(hparams, {'accuracy': 0})
+
     def run(self):
         # Get Data & MetaData
         input_size, input_channels, num_classes, train_data = get_data(
@@ -44,7 +52,7 @@ class HDARTS:
             num_levels=config.NUM_LEVELS,
             num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
             num_ops_at_level=config.NUM_OPS_AT_LEVEL,
-            primitives=SIMPLE_OPS,
+            primitives=OPS,
             channels_in=input_channels,
             channels_start=config.CHANNELS_START,
             stem_multiplier=1,

@@ -5,7 +5,7 @@ import os
 import torch
 
 # Internal Imports
-from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
+from operations import LEN_OPS
 
 
 # TODO: Confirm defaults make sense
@@ -35,7 +35,7 @@ ALPHA_LR = .01
 # HDARTS Config
 NUM_LEVELS = 2
 NUM_NODES_AT_LEVEL = { 0: 3, 1: 3 }
-NUM_OPS_AT_LEVEL = { 0: LEN_SIMPLE_OPS, 1: 3}
+NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 3}
 CHANNELS_START = 3
 STEM_MULTIPLIER = 1
 
