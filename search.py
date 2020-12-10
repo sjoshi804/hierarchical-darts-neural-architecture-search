@@ -73,7 +73,7 @@ class HDARTS:
  
  
         # Train / Validation Split
-        n_train = len(train_data) // 10
+        n_train = (len(train_data) // 100) * config.PERCENTAGE_OF_DATA
         split = n_train // 2
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
