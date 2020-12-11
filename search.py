@@ -8,7 +8,7 @@ from torch.utils.tensorboard.summary import hparams
 # Internal Imports
 from config import SearchConfig
 from model_controller import ModelController
-from operations import OPS
+from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
 from util import get_data, save_checkpoint, accuracy, AverageMeter
  
@@ -46,7 +46,10 @@ class HDARTS:
         loss_criterion = nn.CrossEntropyLoss()
         if torch.cuda.is_available():
             loss_criterion = loss_criterion.cuda()
- 
+        
+        # Ensure num of ops at level 0 = num primitives
+        config.NUM_OPS_AT_LEVEL[0] = LEN_OPS 
+       
         # Initialize model
         model = ModelController(
             num_levels=config.NUM_LEVELS,
