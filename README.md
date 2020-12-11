@@ -15,9 +15,9 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 ## Results
 
-| Dataset  | Test Accuracy  |  GPU Time (Days) |
+| Dataset  | Validation Accuracy  |  GPU Time (Hours) |
 |---|---|---|
-| MNIST |   |   |
+| MNIST | 91%  |  1.5 |
 
 # Top Tasks
 
