@@ -31,13 +31,7 @@ class TestModel(unittest.TestCase):
       stem_multiplier=1,
       num_classes=5)
 
-    # For every sample, ensure that the vector returned is a valid probability distribution
-    sum = 0
-    for sample in model(x.float()):
-      for prob in sample: 
-        assert(prob >= 0 and prob <= 1)
-        sum += prob
-      assert(sum == 1)
+    raise NotImplementedError
 
 if __name__ == '__main__':
   unittest.main()

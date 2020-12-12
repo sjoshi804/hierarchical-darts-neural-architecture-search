@@ -107,7 +107,7 @@ class Model(nn.Module):
       y = y.view(y.size(0), -1) 
 
       # Classifier
-      logits = F.softmax(self.classifer(y), dim=-1)
+      logits = self.classifer(y)
 
       return logits
     else:
