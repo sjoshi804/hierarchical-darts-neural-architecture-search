@@ -176,6 +176,7 @@ class HDARTS:
 
             if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(train_loader)-1:
                 print(
+                    datetime.now(),
                     "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
                        epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses,
@@ -214,6 +215,7 @@ class HDARTS:
  
                 if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
                     print(
+                        datetime.now(),
                         "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                         "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
                             epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
