@@ -30,6 +30,10 @@ class Architect():
             xi: learning rate for virtual gradient step (same as weights lr)
             w_optim: weights optimizer
         """
+
+        # Neutralize unrolled step, make equivalent to first order approximation
+        xi = 0
+        
         # forward & calc loss
         loss = self.net.loss(trn_X, trn_y) # L_trn(w)
 
