@@ -25,17 +25,17 @@ WEIGHTS_WEIGHT_DECAY = 0.0003
 WEIGHTS_GRADIENT_CLIP = 1
 
 # TRAINING CONFIG
-EPOCHS = 100
+EPOCHS = 25
 BATCH_SIZE = 100
 
 # ALPHA Optimizer Config
 ALPHA_WEIGHT_DECAY = 0.0003
-ALPHA_LR = .01
+ALPHA_LR = .05
 
 # HDARTS Config
 NUM_LEVELS = 2
 NUM_NODES_AT_LEVEL = { 0: 3, 1: 3 }
-NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 3}
+NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 2}
 CHANNELS_START = 3
 STEM_MULTIPLIER = 1
 
@@ -93,7 +93,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--num_nodes_at_level', type=eval, default=str(NUM_NODES_AT_LEVEL), 
       help='string dictionary detailing nodes at each level i.e.  "{0: 2, 1: 2 }"')
     parser.add_argument('--num_ops_at_level', type=eval, default=str(NUM_OPS_AT_LEVEL), 
-      help='string dictionary detailing number of operations at each level i.e.  "{0: 2, 1: 2 }"'),
+      help='string dictionary detailing number of operations at each level i.e.  "{0: 8, 1: 2 }"'),
 
 
     parser.add_argument('--alpha_lr', type=float, default=ALPHA_LR, help='lr for weights')
