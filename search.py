@@ -136,6 +136,9 @@ class HDARTS:
  
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
+
+        # Terminate
+        self.terminate()
  
     def train(self, train_loader, valid_loader, model: ModelController, w_optim, alpha_optim, epoch):
         top1 = AverageMeter()
