@@ -14,6 +14,7 @@ import pickle
 import shutil
 import sys
 import torch
+from torch.utils.tensorboard import SummaryWriter
 import torchvision.datasets as dset
 
 
@@ -77,14 +78,14 @@ class AverageMeter():
         self.count += n
         self.avg = self.sum / self.count
 
-def print_alpha(alpha: Alpha, is_terminated=False):
-    
-    with open('final_alpha.txt', 'w+') as f:
+def print_alpha(alpha: Alpha, writer: SummaryWriter, epoch=None):
 
-        if is_terminated:
-            sys.stdout = f # Change the standard output to the file we created.
-    
-        # Write alpha to file / stdout
+    # Write to temp file for easy parsing
+    with open('final_alpha.txt', 'w+') as f:
+        # Reroute stdout to file
+        sys.stdout = f
+
+        print("Epoch", str(epoch))
         for level in alpha.parameters:
             print("Level", level)
             for op_num in range(0, len(alpha.parameters[level])):
@@ -93,6 +94,10 @@ def print_alpha(alpha: Alpha, is_terminated=False):
                     print(edge, alpha.parameters[level][op_num][edge])
                 print("")
             print("\n")
+    
+    # Read from file and print to tensorboard for results analysis
+    with open('final_alpha.txt', 'r') as f:
+        writer.add_text("Alpha at epoch: " + str(epoch), f.read())
 
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
     '''

@@ -235,7 +235,9 @@ class HDARTS:
 
     def terminate(self, signal=None, frame=None):
         # Print alpha
-        print_alpha(self.model.alpha, True)
+        print_alpha(self.model.alpha, self.writer)
+        
+        # Ensure directories to save in exist
 
         # Save learnt model
         learnt_model = LearntModel(self.model.model)
