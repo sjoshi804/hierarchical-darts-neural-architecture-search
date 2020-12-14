@@ -75,20 +75,22 @@ class AverageMeter():
         self.count += n
         self.avg = self.sum / self.count
 
+def print_alpha(alpha: Alpha):
+    for level in alpha.parameters:
+        print("Level", level)
+        for op_num in range(0, len(alpha.parameters[level])):
+            print("Operation", op_num)
+            for edge in alpha.parameters[level][op_num]:
+                print(edge, alpha.parameters[level][op_num][edge])
+            print("")
+        print("\n")
 
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
     '''
     Saves alpha and weights to be able to recreate model as is.
     '''
-    # Prints alpha
-    for level in model.alpha.parameters:
-        print("Level", level)
-        for op_num in range(0, len(model.alpha.parameters[level])):
-            print("Operation", op_num)
-            for edge in model.alpha.parameters[level][op_num]:
-                print(edge, model.alpha.parameters[level][op_num][edge])
-            print("")
-        print("\n")
+
+    print_alpha(model.alpha)
 
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
