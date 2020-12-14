@@ -12,8 +12,10 @@ import numpy as np
 import os
 import pickle
 import shutil
+import sys
 import torch
 import torchvision.datasets as dset
+
 
 # Internal Imports
 import preProcess
@@ -75,23 +77,27 @@ class AverageMeter():
         self.count += n
         self.avg = self.sum / self.count
 
-def print_alpha(alpha: Alpha):
-    for level in alpha.parameters:
-        print("Level", level)
-        for op_num in range(0, len(alpha.parameters[level])):
-            print("Operation", op_num)
-            for edge in alpha.parameters[level][op_num]:
-                print(edge, alpha.parameters[level][op_num][edge])
-            print("")
-        print("\n")
+def print_alpha(alpha: Alpha, is_terminated=False):
+    
+    with open('final_alpha.txt', 'w+') as f:
+
+        if is_terminated:
+            sys.stdout = f # Change the standard output to the file we created.
+    
+        # Write alpha to file / stdout
+        for level in alpha.parameters:
+            print("Level", level)
+            for op_num in range(0, len(alpha.parameters[level])):
+                print("Operation", op_num)
+                for edge in alpha.parameters[level][op_num]:
+                    print(edge, alpha.parameters[level][op_num][edge])
+                print("")
+            print("\n")
 
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
     '''
     Saves alpha and weights to be able to recreate model as is.
     '''
-
-    print_alpha(model.alpha)
-
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
         os.makedirs(checkpoint_root_dir)

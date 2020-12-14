@@ -1,22 +1,23 @@
 # External Imports
 from datetime import datetime
-from os import sys
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard.summary import hparams
+import signal
+import sys
  
 # Internal Imports
 from config import SearchConfig
+from learnt_model import LearntModel
 from model_controller import ModelController
 from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
-from util import get_data, save_checkpoint, accuracy, AverageMeter
+from util import get_data, save_checkpoint, accuracy, AverageMeter, print_alpha
  
 config = SearchConfig()
  
 class HDARTS:
     def __init__(self):
-
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
@@ -51,7 +52,7 @@ class HDARTS:
         config.NUM_OPS_AT_LEVEL[0] = LEN_OPS 
        
         # Initialize model
-        model = ModelController(
+        self.model = ModelController(
             num_levels=config.NUM_LEVELS,
             num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
             num_ops_at_level=config.NUM_OPS_AT_LEVEL,
@@ -65,11 +66,11 @@ class HDARTS:
          )
 
         if torch.cuda.is_available():
-            model = model.cuda()
+            self.model = self.model.cuda()
  
         # Weights Optimizer
         w_optim = torch.optim.SGD(
-            params=model.get_weights(),
+            params=self.model.get_weights(),
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
@@ -78,7 +79,7 @@ class HDARTS:
         alpha_optim = []
         for level in range(0, config.NUM_LEVELS):
             alpha_optim.append(torch.optim.Adam(
-                    params=model.get_alpha_level(level),
+                    params=self.model.get_alpha_level(level),
                     lr=config.ALPHA_LR,
                     weight_decay=config.ALPHA_WEIGHT_DECAY))
  
@@ -99,7 +100,10 @@ class HDARTS:
                                                 sampler=valid_sampler,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
-                                                
+
+        # Register Signal Handler for interrupts & kills
+        signal.signal(signal.SIGINT, self.terminate)
+
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
@@ -108,7 +112,7 @@ class HDARTS:
             self.train(
                 train_loader=train_loader,
                 valid_loader=valid_loader,
-                model=model,
+                model=self.model,
                 w_optim=w_optim,
                 alpha_optim=alpha_optim,
                 epoch=epoch)
@@ -117,7 +121,7 @@ class HDARTS:
             cur_step = (epoch+1) * len(train_loader)
             top1 = self.validate(
                 valid_loader=valid_loader,
-                model=model,
+                model=self.model,
                 epoch=epoch,
                 cur_step=cur_step)
 
@@ -128,7 +132,7 @@ class HDARTS:
             else:
                 is_best = False
             print("Saving checkpoint")
-            save_checkpoint(model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
+            save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
  
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
@@ -228,9 +232,21 @@ class HDARTS:
         print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
  
         return top1.avg
+
+    def terminate(self, signal=None, frame=None):
+        # Print alpha
+        print_alpha(self.model.alpha, True)
+
+        # Save learnt model
+        learnt_model = LearntModel(self.model.model)
+        torch.save(learnt_model, self.dt_string + "_learnt_model")
+
+        # Pass exit signal on
+        sys.exit(0)
+
  
 if __name__ == "__main__":
     if not torch.cuda.is_available():
-        print('No GPU Device Available')
+        print('No GPU Available')
     nas = HDARTS()
     nas.run()

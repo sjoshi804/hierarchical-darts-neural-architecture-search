@@ -1,6 +1,8 @@
 __pycache__
 data
 checkpoints
+*learnt_model
+final_alpha.txt
 runs
 test
 **/.DS_STORE
