@@ -23,11 +23,11 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 TODO: Load model from checkpoint and continue training 
 
-TODO: Apply max to get final operations
+TODO: Learnt model training
 
-TODO: Visualize operations learnt
+TODO: Visualize learnt model
 
 TODO: Learning rate scheduler
 
-TODO: Change initial weight on Zero operation to encourage sparsity
+TODO: Change initial weight on Zero operation to encourage sparsity?
 
