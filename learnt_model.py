@@ -6,7 +6,7 @@ import torch.nn as nn
 from hierarchical_operation import HierarchicalOperation
 from mixed_operation import MixedOperation
 from model import Model
-
+from operations import Zero
 
 class LearntModel(nn.Module):
     '''
@@ -23,9 +23,12 @@ class LearntModel(nn.Module):
 
         # Recursive function to replaced MixedOperations with the operation with maximum weight
         def finalize_operation(operation):
+            # If Zero operation do nothing
+            if type(operation) == Zero:
+                return operation 
 
-            # If mixed operation, recurse on each of its candidates if possible
-            if type(operation) == MixedOperation:
+            # Else If mixed operation, recurse on each of its candidates if possible
+            elif type(operation) == MixedOperation:
 
                 # If any operation inside is HierarchicalOperation then not base case
                 is_base_case = True
@@ -57,6 +60,9 @@ class LearntModel(nn.Module):
         # Finalize the top_level_op in model recursively
         model.top_level_op = finalize_operation(model.top_level_op)
 
+        # Clear out writer object of model, to avoid issues pickling
+        model.writer = None 
+        
         # Instantiate model member variable to register parameters / sub-modules etc.
         self.model = model
 
