@@ -1,7 +1,7 @@
 __pycache__
 data
 checkpoints
-*learnt_model
+learnt_models
 final_alpha.txt
 runs
 test

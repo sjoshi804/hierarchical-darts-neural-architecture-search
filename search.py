@@ -1,10 +1,10 @@
 # External Imports
 from datetime import datetime
-import torch
-import torch.nn as nn
-from torch.utils.tensorboard.summary import hparams
+import os
 import signal
 import sys
+import torch
+import torch.nn as nn
  
 # Internal Imports
 from config import SearchConfig
@@ -238,10 +238,13 @@ class HDARTS:
         print_alpha(self.model.alpha, self.writer)
         
         # Ensure directories to save in exist
+        learnt_model_path = config.LEARNT_MODEL_PATH
+        if not os.path.exists(learnt_model_path):
+            os.makedirs(learnt_model_path)
 
         # Save learnt model
         learnt_model = LearntModel(self.model.model)
-        torch.save(learnt_model, self.dt_string + "_learnt_model")
+        torch.save(learnt_model, learnt_model_path + "/" + self.dt_string + "_learnt_model")
 
         # Pass exit signal on
         sys.exit(0)

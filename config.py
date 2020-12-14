@@ -118,6 +118,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--logdir', default="runs", help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
+    parser.add_argument('--learnt_model_path', default="learnt_models", help="directory to save learnt models in")
     return parser
 
   '''
