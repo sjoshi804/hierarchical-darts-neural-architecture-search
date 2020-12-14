@@ -20,7 +20,6 @@ Useful Links:
 
 '''
 SIMPLE_OPS = {
-  "zero": lambda C, stride, affine: Zero(C, C, stride),
   "double": lambda C, stride, affine: Double(C, stride),
   "triple": lambda C, stride, affine: Triple(C, stride)
 }
