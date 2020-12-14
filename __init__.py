@@ -6,3 +6,4 @@ from .model_controller import ModelController
 from .operations import SIMPLE_OPS, OPS
 from .preProcess import transform_data, Cutout
 from .util import get_data
+from .learnt_model import learntModel

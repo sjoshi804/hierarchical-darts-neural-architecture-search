@@ -25,7 +25,7 @@ TODO: Load model from checkpoint and continue training
 
 TODO: Apply max to get final operations
 
-TODO: Visualize operations learned
+TODO: Visualize operations learnt
 
 TODO: Learning rate scheduler
 
