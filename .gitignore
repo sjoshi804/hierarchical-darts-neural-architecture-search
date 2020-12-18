@@ -1,6 +1,7 @@
 __pycache__
 data
-checkpoints
+checkpoints*
+finetune
 learnt_models
 final_alpha.txt
 runs
