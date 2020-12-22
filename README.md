@@ -31,3 +31,6 @@ TODO: Learning rate scheduler
 
 TODO: Change initial weight on Zero operation to encourage sparsity?
 
+TODO: NIPS 2020 Accepted Papers - DARTS / NAS
+
+TODO: ICLR Submitted Papers - NAS
