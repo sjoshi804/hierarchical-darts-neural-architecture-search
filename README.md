@@ -1,33 +1,33 @@
-# HDARTS Background Research
+# Hierarchical DARTS - Neural Architecture Search (NAS)
 
-## Theory-Inspired Path-Regularized Differential Network Architecture Search
+## About
 
-https://proceedings.neurips.cc/paper/2020/file/5e1b18c4c6a6d31695acbae3fd70ecc6-Paper.pdf
+This is a repository for our work for CS 269 Research Seminar on Efficient Machine Learning taught by Professor Baharan Mirzasoleiman
 
-- Tackles problem of too many skip-connections leading to poor performance of learnt networks
-- Analyzes theoretical reasoning behind this bias and fixes it
-- Proves that when optimizing $F_{train}(W, \beta)$, the convergence rate at each iteration depends on the weights of skip connections much heavier than other types of operations ($\beta$ in this paper is $\alpha$ from DARTS)
-- Proposes Path Regularized DARTS which uses **group-structured sparsity penalizes the skip connection group heavier than another group to rectify the competitive advantage of skip connections** (don't understand this yet, need to read further)
+This repository contains an implementation of Hierarchical DARTS (HDARTS) - a novel algorithm that combines the ideas of hierarchical search spaces for NAS from [Hierarchical Representations for Efficient Architecture Search](https://arxiv.org/abs/1711.00436) and differentiable architecture search from [DARTS](https://arxiv.org/abs/1806.09055).
 
-## Differentiable Neural Architecture Search in Equivalent Space with Exploration Enhancement
+The mathematical notation and the actual algorithm for HDARTS is detailed here at https://www.overleaf.com/read/mcmncsrhrzmn.
 
-- Theoretical approach to ensuring that the differential
-- Fixes the rich-get-richer problem: architectures with better performance early on trained more frequently, the updated weights lead to higher probability of sampling which often leads to local optima
-- Uses a **variational graph autoencoder** (need to read about this) to injectively transform the discrete architecture space into an equivalently continuous latent space 
+## Design
 
-## Other Papers
+- Alpha - class that encapsulates the architecture parameters
+- Model - class that is used to instantiate a network from a given Alpha and Primitives
 
-- https://openreview.net/forum?id=PKubaeJkw3
-- https://arxiv.org/pdf/2010.13501.pdf
+## Results
 
-- https://openaccess.thecvf.com/content_ICCVW_2019/papers/NeurArch/Yan_HMNAS_Efficient_Neural_Architecture_Search_via_Hierarchical_Masking_ICCVW_2019_paper.pdf 
+| Dataset  | Validation Accuracy  |  GPU Time (Minutes) |
+|---|---|---|
+| MNIST | 90%  |  15 |
 
-- https://openreview.net/forum?id=PKubaeJkw3
+# Top Tasks
 
-## Ideas So Far
+TODO: Load model from checkpoint and continue training 
 
-- Argue about weight sharing for alpha being useful while not running into same problems as conventional weight sharing -> avoid catastrophic forgetting 
-- Issue of lack of correspondance between rich get richer and 
-- Hessian norm - related to argmax - argue hierarchy ends up doing perturbation https://openreview.net/forum?id=PKubaeJkw3
-- Larger search space 
-- Argument for wider networks that converge faster (why is this the case?)
+TODO: Learnt model training
+
+TODO: Visualize learnt model
+
+TODO: Learning rate scheduler
+
+TODO: Change initial weight on Zero operation to encourage sparsity?
+

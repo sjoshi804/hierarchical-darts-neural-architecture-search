@@ -7,9 +7,6 @@ import torch
 # Internal Imports
 from operations import LEN_OPS
 
-
-# TODO: Confirm defaults make sense
-
 # DEFAULTS 
 
 # DATASET Config
