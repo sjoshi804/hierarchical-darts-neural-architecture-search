@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # Internal imports
-from alpha import Alpha
-from hierarchical_operation import HierarchicalOperation
+from ..alpha import Alpha
+from ..hierarchical_operation import HierarchicalOperation
 
 class BetaVAE(nn.Module):
     '''
@@ -18,7 +18,9 @@ class BetaVAE(nn.Module):
         - beta - from Beta VAE paper, weight to put on KL divergence part of ELBO loss - biases towards disentangled representations
         - primitives - dict[any -> lambda function with inputs C, stride, affine that returns a primitive operation]
         - channels_in - the input channels from the dataset
-        - latent_size - 
+        - image_height
+        - image_width
+        - latent_size 
         '''
 
         # Superclass constructor
@@ -93,9 +95,11 @@ class BetaVAE(nn.Module):
         mu, logvar = self.encode(x)
         z = self.sample(mu, logvar)
         rx = self.decode(z)
-        return rx, mu, logvar
+        return (rx, mu, logvar)
 
-    def loss(self, recon_x, x, mu, logvar):
+    def loss(self, x, output):
+        recon_x, mu, logvar = output
+        
         # reconstruction losses are summed over all elements and batch
         recon_loss = F.binary_cross_entropy(recon_x, x, reduction='sum')
 
@@ -103,6 +107,11 @@ class BetaVAE(nn.Module):
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-        kl_diverge = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        kl_diverge = self.disentanglement(x, output)
 
         return (recon_loss + self.beta * kl_diverge) / x.shape[0]  # divide total loss by batch size
+    
+    def disentanglement(self, x, output):
+        _, mu, logvar = output
+        kl_diverge = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return kl_diverge / x.shape[0] 
