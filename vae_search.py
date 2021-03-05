@@ -5,13 +5,13 @@ import signal
 import sys
 import torch
 import torch.nn as nn
- 
-# Internal Imports
-from config import SearchConfig
-from .vae_controller import VAEController
-from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
-from util import get_data, save_checkpoint, AverageMeter, print_alpha
+
+# Internal Imports
+from ..config import SearchConfig
+from .vae_controller import VAEController
+from ..operations import OPS, LEN_OPS
+from ..util import get_data, save_checkpoint, AverageMeter, print_alpha
  
 config = SearchConfig()
  
