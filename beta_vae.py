@@ -62,11 +62,11 @@ class BetaVAE(nn.Module):
             nn.Sigmoid()
         )
 
-    def _deconv(self, in_channels, out_channels, padding=0):
+    def _deconv(self, in_channels, out_channels, padding=1):
         return nn.Sequential(
             nn.Conv2d(
                 in_channels, out_channels,
-                kernel_size=4, stride=2, padding=padding
+                kernel_size=3, stride=1, padding=padding
             ),
             nn.BatchNorm2d(out_channels),
             nn.ReLU()

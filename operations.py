@@ -26,7 +26,7 @@ SIMPLE_OPS = {
 
 # FIXME: Fix this to make more sense
 VAE_OPS = {
-  "conv_3x3_4x_bn_relu": lambda C, stride, affine: ConvBNReLu(C, 4*C, 4, 2, 0)
+  "conv_3x3_4x_bn_relu": lambda C, stride, affine: ConvBNReLu(C, 4*C, 3, 1, 1)
 }
 LEN_VAE_OPS = len(VAE_OPS)
 
