@@ -8,10 +8,10 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 # Internal Imports
-from ..config import SearchConfig
-from .vae_controller import VAEController
-from ..operations import OPS, LEN_OPS
-from ..util import get_data, save_checkpoint, AverageMeter, print_alpha
+from config import SearchConfig
+from vae_controller import VAEController
+from operations import VAE_OPS, LEN_VAE_OPS
+from util import get_data, save_checkpoint, AverageMeter, print_alpha
  
 config = SearchConfig()
  
@@ -41,34 +41,34 @@ class VAEHDARTS:
             data_path=config.DATAPATH,
             cutout_length=0,
             validation=False)
- 
+
         # Set Loss Criterion
         loss_criterion = nn.CrossEntropyLoss()
         if torch.cuda.is_available():
             loss_criterion = loss_criterion.cuda()
         
         # Ensure num of ops at level 0 = num primitives
-        config.NUM_OPS_AT_LEVEL[0] = LEN_OPS 
+        config.NUM_OPS_AT_LEVEL[0] = LEN_VAE_OPS 
        
         # Initialize vae
-        self.vae = VAEController(
+        self.model = VAEController(
             num_levels=config.NUM_LEVELS,
             num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
             num_ops_at_level=config.NUM_OPS_AT_LEVEL,
-            primitives=OPS,
+            primitives=VAE_OPS,
             channels_in=input_channels,
             beta=250,
-            image_height=input_size[1],
-            image_width=input_size[0],
+            image_height=input_size,
+            image_width=input_size,
             writer=self.writer
          )
 
         if torch.cuda.is_available():
-            self.vae = self.vae.cuda()
+            self.model = self.model.cuda()
  
         # Weights Optimizer
         w_optim = torch.optim.SGD(
-            params=self.vae.get_weights(),
+            params=self.model.get_weights(),
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
@@ -77,7 +77,7 @@ class VAEHDARTS:
         alpha_optim = []
         for level in range(0, config.NUM_LEVELS):
             alpha_optim.append(torch.optim.Adam(
-                    params=self.vae.get_alpha_level(level),
+                    params=self.model.get_alpha_level(level),
                     lr=config.ALPHA_LR,
                     weight_decay=config.ALPHA_WEIGHT_DECAY))
  
@@ -103,49 +103,49 @@ class VAEHDARTS:
         signal.signal(signal.SIGINT, self.terminate)
 
         # Training Loop
-        best_disentanglement = float('inf')
+        best_entanglement = float('inf')
         for epoch in range(config.EPOCHS):
  
             # Training
             self.train(
                 train_loader=train_loader,
                 valid_loader=valid_loader,
-                vae=self.vae,
+                model=self.model,
                 w_optim=w_optim,
                 alpha_optim=alpha_optim,
                 epoch=epoch)
 
             # Validation
             cur_step = (epoch+1) * len(train_loader)
-            disentanglement = self.validate(
+            entanglement = self.validate(
                 valid_loader=valid_loader,
-                vae=self.vae,
+                model=self.model,
                 epoch=epoch,
                 cur_step=cur_step)
 
             # Save Checkpoint
-            if best_disentanglement < disentanglement:
-                best_disentanglement = disentanglement
+            if best_entanglement > entanglement:
+                best_entanglement = entanglement
                 is_best = True
             else:
                 is_best = False
             print("Saving checkpoint")
-            save_checkpoint(self.vae, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
+            save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
  
         # Log Best Accuracy so far
-        print("Final best Disentanglement = {:.4%}".format(best_disentanglement))
+        print("Final best entanglement = {:.4%}".format(best_entanglement))
 
         # Terminate
         self.terminate()
  
-    def train(self, train_loader, valid_loader, vae: VAEController, w_optim, alpha_optim, epoch):
+    def train(self, train_loader, valid_loader, model: VAEController, w_optim, alpha_optim, epoch):
         losses = AverageMeter()
-        disentanglements = AverageMeter()
+        entanglements = AverageMeter()
 
         cur_step = epoch*len(train_loader)
  
         # Prepares the vae for training - 'training mode'
-        vae.train()
+        model.train()
 
         for step, ((trn_X, trn_y), (val_X, val_y)) in enumerate(zip(train_loader, valid_loader)):
             N = trn_X.size(0)
@@ -158,80 +158,80 @@ class VAEHDARTS:
             # Alpha Gradient Steps for each level
             for level in range(0, self.num_levels):
                 alpha_optim[level].zero_grad()
-                output = vae(trn_X)
-                loss = vae.loss(trn_X, output)
+                output = model(trn_X)
+                loss = model.loss(trn_X, output)
                 loss.backward()
                 alpha_optim[level].step()
 
             # Weights Step
             w_optim.zero_grad()
-            output = vae(trn_X)
-            loss = vae.loss(trn_X, output)
-            disentanglement = vae.disentanglement(trn_X, output)
+            output = model(trn_X)
+            loss = model.loss(trn_X, output)
+            entanglement = model.entanglement(trn_X, output)
             loss.backward()
 
             # gradient clipping
-            nn.utils.clip_grad_norm_(vae.get_weights(), config.WEIGHTS_GRADIENT_CLIP)
+            nn.utils.clip_grad_norm_(model.get_weights(), config.WEIGHTS_GRADIENT_CLIP)
             w_optim.step()
  
             # Update averages
             losses.update(loss.item(), N)
-            disentanglements.update(disentanglement, N)
+            entanglements.update(entanglement, N)
 
             if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(train_loader)-1:
                 print(
                     datetime.now(),
-                    "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f}"
-                    "Disentanglement {disentanglements.avg:.3f}".format(
-                       epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses, disentanglements=disentanglements))
+                    "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Entanglement {entanglements.avg:.3f}".format(
+                       epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses, entanglements=entanglements))
 
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
-            self.writer.add_scaler('train/disentanglement(kl)', disentanglement, cur_step)
+            self.writer.add_scalar('train/entanglement(kl)', entanglement, cur_step)
             cur_step += 1
  
-        print("Train: [{:2d}/{}] Final Disentanglement {:.4%}".format(epoch+1, config.EPOCHS, disentanglements.avg))
+        print("Train: [{:2d}/{}] Final entanglement {:.3f}".format(epoch+1, config.EPOCHS, entanglements.avg))
  
  
-    def validate(self, valid_loader, vae: VAEController, epoch, cur_step):
+    def validate(self, valid_loader, model: VAEController, epoch, cur_step):
         losses = AverageMeter()
-        disentanglements = AverageMeter()
+        entanglements = AverageMeter()
 
-        vae.eval()
+        model.eval()
 
         with torch.no_grad():
             for step, (X, y) in enumerate(valid_loader):
                 N = X.size(0)
 
-                output = vae(X)
+                output = model(X)
                 
                 if torch.cuda.is_available():
                     y = y.cuda()   
 
-                loss = vae.loss(X, output)
-                disentanglement = vae.loss(X, output)
+                loss = model.loss(X, output)
+                entanglement = model.entanglement(X, output)
 
                 # update averages
                 losses.update(loss.item(), N)
-                disentanglements.update(disentanglement, N)
+                entanglements.update(entanglement, N)
  
                 if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
                     print(
                         datetime.now(),
                         "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
-                        "Disentanglement {disentanglements.avg:.3f}".format(
+                        "Entanglement {entanglements.avg:.3f}".format(
                             epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
-                            disentanglements=disentanglements))
+                            entanglements=entanglements))
  
         self.writer.add_scalar('val/loss', losses.avg, cur_step)
-        self.writer.add_scalar('val/disentanglement', disentanglements.avg, cur_step)
+        self.writer.add_scalar('val/entanglement', entanglements.avg, cur_step)
 
-        print("Valid: [{:2d}/{}] Final Disentanglement {:.4%}".format(epoch+1, config.EPOCHS, disentanglements.avg))
+        print("Valid: [{:2d}/{}] Final entanglement {:.4%}".format(epoch+1, config.EPOCHS, entanglements.avg))
  
-        return disentanglements.avg
+        return entanglements.avg
 
     def terminate(self, signal=None, frame=None):
         # Print alpha
-        print_alpha(self.vae.alpha, self.writer)
+        print_alpha(self.model.alpha, self.writer)
         
         '''
         TODO: Implement this for VAE

@@ -24,6 +24,12 @@ SIMPLE_OPS = {
   "triple": lambda C, stride, affine: Triple(C, stride)
 }
 
+# FIXME: Fix this to make more sense
+VAE_OPS = {
+  "conv_3x3_4x_bn_relu": lambda C, stride, affine: ConvBNReLu(C, 4*C, 4, 2, 0)
+}
+LEN_VAE_OPS = len(VAE_OPS)
+
 LEN_SIMPLE_OPS = len(SIMPLE_OPS)
 
 MANDATORY_OPS = {
@@ -146,6 +152,20 @@ class ReLUConvBN(nn.Module):
       nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding, bias=False),
       nn.BatchNorm2d(C_out, affine=affine)
     )
+    self.channels_out = C_out
+
+  def forward(self, x):
+    return self.op(x)
+
+class ConvBNReLu(nn.Module):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+    super(ConvBNReLu, self).__init__()
+    self.op =  nn.Sequential(
+            nn.Conv2d(C_in, C_out, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.BatchNorm2d(C_out),
+            nn.ReLU()
+        )
+    self.channels_out = C_out
 
   def forward(self, x):
     return self.op(x)

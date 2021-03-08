@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # Internal imports
-from ..alpha import Alpha
-from ..hierarchical_operation import HierarchicalOperation
+from alpha import Alpha
+from hierarchical_operation import HierarchicalOperation
 
 class BetaVAE(nn.Module):
     '''
@@ -56,17 +56,17 @@ class BetaVAE(nn.Module):
         self.fc_z = nn.Linear(latent_size, self.flattened_feature_count)
         self.decoder =  nn.Sequential(
             self._deconv(self.encoder.channels_out, 64),
-            self._deconv(64, 32),
-            self._deconv(32, 32, 1),
-            self._deconv(32, 3),
+            self._deconv(64, 16, 1),
+            self._deconv(16, 4, 1),
+            self._deconv(4, channels_in, 1),
             nn.Sigmoid()
         )
 
-    def _deconv(self, in_channels, out_channels, out_padding=0):
+    def _deconv(self, in_channels, out_channels, padding=0):
         return nn.Sequential(
-            nn.ConvTranspose2d(
+            nn.Conv2d(
                 in_channels, out_channels,
-                kernel_size=4, stride=2, output_padding=out_padding
+                kernel_size=4, stride=2, padding=padding
             ),
             nn.BatchNorm2d(out_channels),
             nn.ReLU()
@@ -107,11 +107,11 @@ class BetaVAE(nn.Module):
         # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
         # https://arxiv.org/abs/1312.6114
         # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-        kl_diverge = self.disentanglement(x, output)
+        kl_diverge = self.entanglement(x, output)
 
         return (recon_loss + self.beta * kl_diverge) / x.shape[0]  # divide total loss by batch size
     
-    def disentanglement(self, x, output):
+    def entanglement(self, x, output):
         _, mu, logvar = output
         kl_diverge = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         return kl_diverge / x.shape[0] 

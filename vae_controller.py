@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 # Internal Imports
 from alpha import Alpha 
-from .beta_vae import BetaVAE
+from beta_vae import BetaVAE
 
 class VAEController(nn.Module):
     '''
@@ -42,7 +42,7 @@ class VAEController(nn.Module):
         )
 
         # Initialize model with initial alpha, 
-        self.vae = BetaVAE(
+        self.model = BetaVAE(
                 alpha=self.alpha,
                 beta=beta,
                 primitives=self.primitives,
@@ -53,16 +53,16 @@ class VAEController(nn.Module):
                 test_mode=test_mode)
         
         if not test_mode and torch.cuda.is_available():
-            self.vae = self.vae.cuda()
+            self.model = self.model.cuda()
 
     def forward(self, x):
-        return self.vae(x)
+        return self.model(x)
 
     def loss(self, x, output):
-        return self.vae.loss(x, output)
+        return self.model.loss(x, output)
 
-    def disentanglement(self, x, output):
-        return self.vae.disentanglement(x, output)
+    def entanglement(self, x, output):
+        return self.model.entanglement(x, output)
 
     # Get list of alpha parameters for a level
     def get_alpha_level(self, level):
