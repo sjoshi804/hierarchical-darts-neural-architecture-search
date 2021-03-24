@@ -8,3 +8,5 @@ runs
 test
 **/.DS_STORE
 vae_runs
+logs
+mnist_learnt_models

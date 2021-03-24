@@ -33,7 +33,8 @@ class HDARTS:
                 hparams[key] = str(config.__dict__[key])
             else:
                 hparams[key] = config.__dict__[key]
-        self.writer.add_hparams(hparams, {'accuracy': 0})
+        # Commented out for Hoffman Cluster
+        # self.writer.add_hparams(hparams, {'accuracy': 0})
 
     def run(self):
         # Get Data & MetaData
