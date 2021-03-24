@@ -30,7 +30,7 @@ git branch
 git log --name-status HEAD^..HEAD
 
 echo "Running Search"
-python3 search.py --dataset=cifar10 --epochs=1 --num_nodes_at_level='{0: 2, 1:2}' --channels_start=1 --weights_gradient_clip=5.0 --batch_size=64 --alpha_lr=0.01 --logdir=logs --learnt_model_path=mnist_learnt_models
+python3 search.py --dataset=cifar10 --epochs=10 --num_nodes_at_level='{0: 4, 1:3}' --channels_start=1 --weights_gradient_clip=5.0 --batch_size=64 --alpha_lr=0.01 --logdir=logs --learnt_model_path=cifar10_learnt_models
 
 # echo job info on joblog:
 echo "Job $JOB_ID ended on:   " `hostname -s`
