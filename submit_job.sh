@@ -6,9 +6,6 @@
 #$ -j y
 ## Edit the line below as needed:
 #$ -l gpu
-## Modify the parallel environment
-## and the number of cores as needed:
-#$ -pe shared 1
 # Email address to notify
 #$ -M $USER@mail
 # Notify when
@@ -26,8 +23,14 @@ module load python/3.7.2
 
 ## substitute the command to run your code
 ## in the two lines below:
-echo '/usr/bin/time -v hostname'
-/usr/bin/time -v hostname
+echo "-------------------------------------------------"
+echo "\t\tVerify Setup"
+echo "-------------------------------------------------"
+git branch
+git log --name-status HEAD^..HEAD
+
+echo "Running Search"
+python3 search.py --dataset=cifar10 --epochs=1 --num_nodes_at_level='{0: 2, 1:2}' --channels_start=1 --weights_gradient_clip=5.0 --batch_size=64 --alpha_lr=0.01 --logdir=logs --learnt_model_path=mnist_learnt_models
 
 # echo job info on joblog:
 echo "Job $JOB_ID ended on:   " `hostname -s`
