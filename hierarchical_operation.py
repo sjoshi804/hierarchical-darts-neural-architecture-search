@@ -101,8 +101,10 @@ class HierarchicalOperation(nn.Module):
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
+        print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
         for key in primitives: 
           base_operations.append(primitives[key](C=channels_in, stride=1, affine=False))
+          print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
 
       else: 
         # Recursive case, use create_dag to create the list of operations
