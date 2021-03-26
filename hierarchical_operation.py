@@ -1,5 +1,6 @@
 # External Imports
 from torch import cat  
+import torch
 import torch.nn as nn 
 
 # Internal Imports
