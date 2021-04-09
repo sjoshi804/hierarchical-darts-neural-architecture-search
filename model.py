@@ -15,7 +15,7 @@ class Model(nn.Module):
   any other neural network might.
   '''
 
-  def __init__(self, alpha: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, writer=None, test_mode=False):
+  def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, num_cells: int, writer=None, test_mode=False):
     '''
     Input: 
     - alpha - an object of type Alpha
@@ -34,7 +34,8 @@ class Model(nn.Module):
     super().__init__()
 
     # Initialize member variables
-    self.alpha = alpha
+    self.alpha_normal = alpha_normal
+    self.alpha_reduce = alpha_reduce
     self.writer = writer
     self.test_mode = test_mode
     '''
@@ -51,17 +52,34 @@ class Model(nn.Module):
       )
 
     '''
-    Main Network: Top-Level DAG created here
+    Main Network: Top-Level DAGs for Cells created here
     '''
+    # List of modules that holds all the cells
+    self.main_net = nn.ModuleList()
+    # At 1/3 and 2/3 num_cells, reduction cells are inserted
+    reduction_cell_indices = [num_cells/3, (num_cells/3)*2]
+    for i in range(0, num_cells):
+      if i in reduction_cell_indices:
+        # Reduction Cell
+        self.main_net.append(HierarchicalOperation.create_dag(
+          level=alpha_reduce.num_levels - 1,
+          alpha=alpha_reduce,
+          alpha_dag=alpha_reduce.parameters[alpha_reduce.num_levels - 1][0],
+          primitives=primitives,
+          channels_in=channels_start,
+          is_reduction=True   
+        ))
+      else:
+        # Normal Cell
+        self.main_net.append(HierarchicalOperation.create_dag(
+          level=alpha_normal.num_levels - 1,
+          alpha=alpha_normal,
+          alpha_dag=alpha_normal.parameters[alpha_normal.num_levels - 1][0],
+          primitives=primitives,
+          channels_in=channels_start,
+          is_reduction=False
+        ))
 
-    # Dict from edge tuple to MixedOperation on that edge
-    self.top_level_op = HierarchicalOperation.create_dag(
-      level=alpha.num_levels - 1,
-      alpha=alpha,
-      alpha_dag=alpha.parameters[alpha.num_levels - 1][0],
-      primitives=primitives,
-      channels_in=channels_start        
-    )
 
     '''
     Post-processing Layers
@@ -88,10 +106,23 @@ class Model(nn.Module):
       x = self.pre_processing(x)
 
     '''
-    Main model - identical to HierarchicalOperation.forward in this section
+    Main model 
     '''
-
-    y = self.top_level_op(x)
+    output = []
+    for i in range(0, len(self.main_net)):
+      # Use stem for input if no previous cells
+      if (i - 2 < 0):
+        x_prev_prev = x
+      else:
+        x_prev_prev = output[i - 2]
+      if (i - 1 < 0):
+        x_prev = x 
+      else:
+        x_prev = output[i - 1]
+      # Append to output
+      output.append(self.main_net[i].forward(x_prev_prev, x_prev))
+    y = output[len(output) - 1]
+    
     if self.writer is not None:
       pass
       #self.writer.add_graph(self.top_level_op, x)

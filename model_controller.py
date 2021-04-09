@@ -15,7 +15,7 @@ class ModelController(nn.Module):
 
     get_alpha_level(level) -> returns parameter (yes singular, as the whole tensor is wrapped as one parameter) corresponding to alpha_level
     '''
-    def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion, writer=None, test_mode=False):
+    def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, loss_criterion, num_cells: int, writer=None, test_mode=False):
         '''
         - Initializes member variables
         - Registers alpha parameters by creating a dummy alpha using the constructor and using get_alpha_level to get the alpha for a given level. This tensor is wrapped with nn.Parameter to indicate that is a Parameter for this controller (thus requires gradient computation with respect to itself). This nn.Parameter is added to the nn.ParameterList that is self.alphas.
@@ -35,9 +35,17 @@ class ModelController(nn.Module):
         self.num_classes = num_classes
         self.loss_criterion = loss_criterion
         self.writer = writer 
+        self.num_cells = num_cells
 
-        # Initialize Alpha
-        self.alpha = Alpha(
+        # Initialize Alpha for both types of cells
+        # Normal Cell
+        self.alpha_normal = Alpha(
+            num_levels=self.num_levels,
+            num_nodes_at_level=self.num_nodes_at_level,
+            num_ops_at_level=self.num_ops_at_level
+        )
+
+        self.alpha_reduce = Alpha(
             num_levels=self.num_levels,
             num_nodes_at_level=self.num_nodes_at_level,
             num_ops_at_level=self.num_ops_at_level
@@ -45,12 +53,14 @@ class ModelController(nn.Module):
 
         # Initialize model with initial alpha
         self.model = Model(
-                alpha=self.alpha,
+                alpha_normal=self.alpha_normal,
+                alpha_reduce=self.alpha_reduce,
                 primitives=self.primitives,
                 channels_in=self.channels_in,
                 channels_start=self.channels_start,
                 stem_multiplier=self.stem_multiplier,
                 num_classes=self.num_classes,
+                num_cells=num_cells,
                 writer=writer,
                 test_mode=test_mode)
         
@@ -67,7 +77,7 @@ class ModelController(nn.Module):
 
     # Get list of alpha parameters for a level
     def get_alpha_level(self, level):
-        return self.alpha.get_alpha_level(level)
+        return self.alpha_normal.get_alpha_level(level) + self.alpha_reduce.get_alpha_level(level)
 
     # Get all the weights parameters
     def get_weights(self):
