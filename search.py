@@ -62,6 +62,7 @@ class HDARTS:
             channels_start=config.CHANNELS_START,
             stem_multiplier=1,
             num_classes=num_classes,
+            num_cells=config.NUM_CELLS,
             loss_criterion=loss_criterion,
             writer=self.writer
          )
