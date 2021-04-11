@@ -90,7 +90,7 @@ class Model(nn.Module):
 
       # Final Layer: Linear classifer to get final prediction, expected output vector of length num_classes
       # Linear transformation without activation function
-      self.classifer = nn.Linear(self.top_level_op.channels_out, num_classes) 
+      self.classifer = nn.Linear(self.main_net[-1].channels_out, num_classes) 
 
   def forward(self, x): 
     '''

@@ -30,7 +30,6 @@ echo "-------------------------------------------------"
 echo "                     Verify Setup                "
 echo "-------------------------------------------------"
 git branch
-git log --name-status HEAD^..HEAD
 
 echo "-------------------------------------------------"
 echo "                     Environment Setup           "
@@ -41,7 +40,7 @@ source activate pytorch-1.3.1-gpu
 echo "-------------------------------------------------"
 echo "                     Running Search              "
 echo "-------------------------------------------------"
-EXPERIMENT="python3 search.py --dataset=cifar10 --epochs=10 --num_nodes_at_level='{0:5, 1:5}' --channels_start=12 --weights_gradient_clip=5.0 --batch_size=32 --alpha_lr=0.01 --logdir=logs --learnt_model_path=cifar10_learnt_models --num_download_workers=8"
+EXPERIMENT="python3 search.py --dataset=cifar10 --epochs=1 --num_nodes_at_level='{0:3, 1:3}' --channels_start=1 --weights_gradient_clip=5.0 --batch_size=32 --alpha_lr=0.01 --logdir=logs --learnt_model_path=cifar10_learnt_models --num_download_workers=8"
 echo $EXPERIMENT
 eval $EXPERIMENT
 

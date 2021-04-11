@@ -54,7 +54,10 @@ class HierarchicalOperation(nn.Module):
         if (node_a == 0): 
           # for node_a = 0, it is trivial, input of entire module / first input
           input = x
-        elif (node_a == 1 and x2 != None):
+          if (node_b == 1 and type(x2) != type(None)):
+            # If edge between 0 and 1 on top-level - skip, edge doesn't exist
+            continue
+        elif (node_a == 1 and type(x2) != type(None)):
           # if top level, then x2 provided then use for second node
           input = x2
         else: 
