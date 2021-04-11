@@ -1,6 +1,5 @@
 # External Imports
 from torch import cat  
-import torch
 import torch.nn as nn 
 
 # Internal Imports
@@ -39,7 +38,7 @@ class HierarchicalOperation(nn.Module):
     # We can take this sum by using channels_out property since Mixed operation will have it defined
     self.channels_out = sum(self.ops[str((prev_node, num_nodes - 1))].channels_out for prev_node in range(0, num_nodes - 1))
 
-  def forward(self, x):
+  def forward(self, x, x2=None):
     '''
     Iteratively compute using each edge of the dag
     '''
@@ -52,9 +51,11 @@ class HierarchicalOperation(nn.Module):
         edge = (node_a, node_b)
 
         if (node_a == 0): 
-          # for node_a = 0, it is trivial, input of entire module
+          # for node_a = 0, it is trivial, input of entire module / first input
           input = x
-
+        elif (node_a == 1 and x2 != None):
+          # if top level, then x2 provided then use for second node
+          input = x2
         else: 
           # otherwise it is the concatentation of the output of every edge (node, node_a)
           input = []
@@ -64,14 +65,14 @@ class HierarchicalOperation(nn.Module):
 
           input = cat(tuple(input), dim=1) 
 
-        output[edge] = self.ops[str(edge)](input)
+        output[edge] = self.ops[str(edge)].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
     return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
+  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int, is_reduction=False, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -85,6 +86,16 @@ class HierarchicalOperation(nn.Module):
     nodes_channels_out = []
 
     for node_a in range(0, num_nodes):
+      
+      '''
+      Determine stride
+      '''
+      if (level == alpha.num_levels - 1 and is_reduction and node_a < 2):
+        stride = 2
+      elif (node_a == 0):
+        stride = input_stride
+      else: 
+        stride = 1
 
       '''
       Determine channels_in
@@ -96,7 +107,6 @@ class HierarchicalOperation(nn.Module):
       '''
       Determine base set of operations
       '''
-
       base_operations = []
 
       if level == 0: 
@@ -106,6 +116,7 @@ class HierarchicalOperation(nn.Module):
         for key in primitives: 
           base_operations.append(primitives[key](C=channels_in, stride=1, affine=False))
           print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
+          base_operations.append(primitives[key](C=channels_in, stride=stride, affine=False))
 
       else: 
         # Recursive case, use create_dag to create the list of operations
@@ -115,11 +126,12 @@ class HierarchicalOperation(nn.Module):
             alpha=alpha,
             alpha_dag=alpha.parameters[level-1][op_num],
             primitives=primitives,
-            channels_in=channels_in
+            channels_in=channels_in,
+            stride=stride
           ))
 
         # Append zero operation
-        base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=1))
+        base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride))
 
       '''
       Determine channels_out
@@ -130,8 +142,14 @@ class HierarchicalOperation(nn.Module):
       '''
       Create mixed operations on outgoing edges for node_a
       '''
+      # If top level and first node, then we mustn't connect node 0 to node 1 as they are both input nodes
+      if (node_a == 0 and level == alpha.num_levels-1):
+        offset = 2
+      else:
+        offset = 1
+
       # Loop through all node_b > node_a to create mixed operation on every outgoing edge from node_a 
-      for node_b in range(node_a + 1, num_nodes):
+      for node_b in range(node_a + offset, num_nodes):
         
         # Create mixed operation on outgiong edge
         edge = (node_a, node_b)

@@ -35,6 +35,7 @@ NUM_NODES_AT_LEVEL = { 0: 3, 1: 3 }
 NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 2}
 CHANNELS_START = 3
 STEM_MULTIPLIER = 1
+NUM_CELLS = 3
 
 # MISCELLANEOUS CONFIG
 NUM_DOWNLOAD_WORKERS = 2
@@ -86,6 +87,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
     parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
     parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='batch size')
+    parser.add_argument('--num_cells', type=int, default=NUM_CELLS, help='number of cells in search model')
 
     parser.add_argument('--num_nodes_at_level', type=eval, default=str(NUM_NODES_AT_LEVEL), 
       help='string dictionary detailing nodes at each level i.e.  "{0: 2, 1: 2 }"')

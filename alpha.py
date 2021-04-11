@@ -1,5 +1,4 @@
-from torch import tensor, zeros
-from torch.nn.parameter import Parameter
+from torch import zeros
 from typing import Dict 
 import torch.nn as nn
 
@@ -93,12 +92,3 @@ class Alpha:
 
         # Make alpha_level a nn.ParameterList
         return nn.ParameterList(alpha_level)
-
-    # FIXME: May be incorrect after revamp
-    def set_alpha_level(self, num_level, alpha_level):
-        for dag_num in range(0, len(self.parameters[num_level])):
-            edge_num = 0
-            for node_a in range(0, self.num_nodes_at_level[num_level]):
-                for node_b in range(node_a + 1, self.num_nodes_at_level[num_level]):
-                    self.parameters[num_level][dag_num][(node_a, node_b)] = alpha_level[dag_num][edge_num]
-                    edge_num += 1
