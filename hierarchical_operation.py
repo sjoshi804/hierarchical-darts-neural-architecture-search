@@ -1,5 +1,6 @@
 # External Imports
 from torch import cat  
+import torch
 import torch.nn as nn 
 
 # Internal Imports
@@ -127,7 +128,7 @@ class HierarchicalOperation(nn.Module):
             alpha_dag=alpha.parameters[level-1][op_num],
             primitives=primitives,
             channels_in=channels_in,
-            stride=stride
+            input_stride=stride
           ))
 
         # Append zero operation
