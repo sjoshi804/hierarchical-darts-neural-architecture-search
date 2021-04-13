@@ -36,6 +36,8 @@ class ModelController(nn.Module):
         self.loss_criterion = loss_criterion
         self.writer = writer 
         self.num_cells = num_cells
+        self.test_mode = test_mode
+        self.graph_added = False
 
         # Initialize Alpha for both types of cells
         # Normal Cell
@@ -68,6 +70,10 @@ class ModelController(nn.Module):
             self.model = self.model.cuda()
 
     def forward(self, x):
+        if self.test_mode and not self.graph_added: 
+            # Visualize model in tensorboard
+            self.writer.add_graph(self.model, x)
+            self.graph_added = True
         return self.model(x)
 
     # Get loss object using loss_criterion

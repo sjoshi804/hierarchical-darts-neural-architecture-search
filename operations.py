@@ -37,6 +37,18 @@ MANDATORY_OPS = {
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
+OPS = {
+  'avg_pool_3x3' : lambda C, stride, affine: AvgPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False),
+  'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), #(3, stride=stride, padding=1), #add batch normalization here
+  'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
+  'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
+  'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
+  'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
+  'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
+  'conv_7x1_1x7' : lambda C, stride, affine: Conv7x1_1x7(C, stride, affine=affine)
+}
+
+LEN_OPS = len(OPS)
 
 class Zero(nn.Module):
 
@@ -95,20 +107,6 @@ class Triple(nn.Module):
     if self.stride == 1:
       return x.mul(3.)
     return x[:,:,::self.stride,::self.stride].mul(3.)
-
-
-OPS = {
-  'avg_pool_3x3' : lambda C, stride, affine: AvgPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False),
-  'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), #(3, stride=stride, padding=1), #add batch normalization here
-  'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
-  'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
-  'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
-  'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
-  'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
-  'conv_7x1_1x7' : lambda C, stride, affine: Conv7x1_1x7(C, stride, affine=affine)
-}
-
-LEN_OPS = len(OPS)
 
 class Conv7x1_1x7(nn.Module):
   def __init__(self, C, stride, affine):
@@ -219,3 +217,18 @@ class FactorizedReduce(nn.Module):
     out = cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
     out = self.bn(out)
     return out
+
+class StdConv(nn.Module):
+    """ Standard conv
+    ReLU - Conv - BN
+    """
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(C_in, C_out, kernel_size, stride, padding, bias=False),
+            nn.BatchNorm2d(C_out, affine=affine)
+        )
+
+    def forward(self, x):
+        return self.net(x)

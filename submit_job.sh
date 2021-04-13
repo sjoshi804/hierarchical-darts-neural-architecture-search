@@ -34,7 +34,7 @@ git branch
 echo "-------------------------------------------------"
 echo "                     Environment Setup           "
 echo "-------------------------------------------------"
-echo "activate pytorch-1.3.1-gpu"
+echo "source activate pytorch-1.3.1-gpu"
 source activate pytorch-1.3.1-gpu
 
 echo "-------------------------------------------------"

@@ -77,7 +77,7 @@ class AverageMeter():
         self.count += n
         self.avg = self.sum / self.count
 
-def print_alpha(alpha: Alpha, writer: SummaryWriter, epoch=None):
+def print_alpha(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
 
     # Write to temp file for easy parsing
     with open('final_alpha.txt', 'w+') as f:
@@ -117,9 +117,11 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
             pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
     # Saves alpha and weights to aforementioned directory
-    alpha_file_path = os.path.join(current_checkpoint_dir, "alpha.pkl")
+    alpha_normal_file_path = os.path.join(current_checkpoint_dir, "alpha_normal.pkl")
+    alpha_reduce_file_path = os.path.join(current_checkpoint_dir, "alpha_reduce.pkl")
     weights_file_path = os.path.join(current_checkpoint_dir, "weights.pkl")
-    save_object(model.alpha, alpha_file_path)
+    save_object(model.alpha_normal, alpha_normal_file_path)
+    save_object(model.alpha_reduce, alpha_reduce_file_path)
     torch.save(model.model.state_dict(), weights_file_path)
 
     # Ensure best checkpoint directory exists
@@ -129,7 +131,8 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
 
     # If best copies over to best checkpoint directory
     if is_best:
-        shutil.copyfile(alpha_file_path, os.path.join(best_checkpoint_dir, "alpha.pkl"))
+        shutil.copyfile(alpha_normal_file_path, os.path.join(best_checkpoint_dir, "alpha_normal.pkl"))
+        shutil.copyfile(alpha_reduce_file_path, os.path.join(best_checkpoint_dir, "alpha_reduce.pkl"))
         shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
     
     # TODO: Save other parameters needed for ModelController constructor

@@ -240,8 +240,10 @@ class HDARTS:
 
     def terminate(self, signal=None, frame=None):
         # Print alpha
-        print_alpha(self.model.alpha, self.writer)
+        print_alpha(self.model.alpha_normal, self.writer, "normal")
+        print_alpha(self.model.alpha_reduce, self.writer, "reduce")
         
+        '''
         # Ensure directories to save in exist
         learnt_model_path = config.LEARNT_MODEL_PATH
         if not os.path.exists(learnt_model_path):
@@ -250,7 +252,7 @@ class HDARTS:
         # Save learnt model
         learnt_model = LearntModel(self.model.model)
         torch.save(learnt_model, learnt_model_path + "/" + self.dt_string + "_learnt_model")
-
+        '''
         # Pass exit signal on
         sys.exit(0)
 

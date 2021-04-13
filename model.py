@@ -43,12 +43,12 @@ class Model(nn.Module):
     '''
     if not test_mode:
       # Create a pre-processing / 'stem' operation that is a sort of preprocessing layer before our hierarchical network
-      channels_start = channels_start * stem_multiplier
+      channels_pre_processing = channels_start * stem_multiplier
       self.pre_processing = nn.Sequential(
           # Number of filters is specified by channels_start -> thus increasing feature dimension
-          nn.Conv2d(channels_in, channels_start, 3, 1, 1, bias=False),
+          nn.Conv2d(channels_in, channels_pre_processing, 3, 1, 1, bias=False),
           # Normalization in the regular sense - acts as a regularizer
-          nn.BatchNorm2d(channels_start)
+          nn.BatchNorm2d(channels_pre_processing)
       )
 
     '''
@@ -56,18 +56,38 @@ class Model(nn.Module):
     '''
     # List of modules that holds all the cells
     self.main_net = nn.ModuleList()
+
     # At 1/3 and 2/3 num_cells, reduction cells are inserted
     reduction_cell_indices = [num_cells/3, (num_cells/3)*2]
+
+    # Initialize channels
+    curr_channels = channels_start 
+
+    # Create cells
     for i in range(0, num_cells):
+      # Determine channels
+      if (i - 2) < 0:
+        prev_prev_channels = channels_pre_processing
+      else:
+        prev_prev_channels = self.main_net[i - 2].channels_out
+      if (i - 1) < 0:
+        prev_channels = channels_pre_processing
+      else:
+        prev_channels = self.main_net[i - 1].channels_out
+      
       if i in reduction_cell_indices:
-        # Reduction Cell
+        # Reduction Cell - halve feature map, double # features
+        curr_channels *= 2
         self.main_net.append(HierarchicalOperation.create_dag(
           level=alpha_reduce.num_levels - 1,
           alpha=alpha_reduce,
           alpha_dag=alpha_reduce.parameters[alpha_reduce.num_levels - 1][0],
           primitives=primitives,
-          channels_in=channels_start,
-          is_reduction=True   
+          channels_in_x1=prev_prev_channels,
+          channels_in_x2=prev_channels,
+          channels=curr_channels,
+          is_reduction=True,
+          prev_reduction=(i-1 in reduction_cell_indices) 
         ))
       else:
         # Normal Cell
@@ -76,10 +96,12 @@ class Model(nn.Module):
           alpha=alpha_normal,
           alpha_dag=alpha_normal.parameters[alpha_normal.num_levels - 1][0],
           primitives=primitives,
-          channels_in=channels_start,
-          is_reduction=False
+          channels_in_x1=prev_prev_channels,
+          channels_in_x2=prev_channels,
+          channels=curr_channels,
+          is_reduction=False,
+          prev_reduction=(i-1 in reduction_cell_indices)
         ))
-
 
     '''
     Post-processing Layers
@@ -121,11 +143,7 @@ class Model(nn.Module):
         x_prev = output[i - 1]
       # Append to output
       output.append(self.main_net[i].forward(x_prev_prev, x_prev))
-    y = output[len(output) - 1]
-    
-    if self.writer is not None:
-      pass
-      #self.writer.add_graph(self.top_level_op, x)
+    y = output[-1]
 
     '''
     Post-processing Neural Network Layers
