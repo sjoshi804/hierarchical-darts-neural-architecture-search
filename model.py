@@ -58,7 +58,7 @@ class Model(nn.Module):
     self.main_net = nn.ModuleList()
 
     # At 1/3 and 2/3 num_cells, reduction cells are inserted
-    reduction_cell_indices = [num_cells/3, (num_cells/3)*2]
+    reduction_cell_indices = [num_cells//3, (num_cells//3)*2]
 
     # Initialize channels
     curr_channels = channels_start 
