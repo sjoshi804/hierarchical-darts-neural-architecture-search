@@ -77,7 +77,7 @@ class ModelController(nn.Module):
 
     # Get list of alpha parameters for a level
     def get_alpha_level(self, level):
-        return self.alpha_normal.get_alpha_level(level) + self.alpha_reduce.get_alpha_level(level)
+        return self.alpha_normal.get_alpha_level(level).extend(self.alpha_reduce.get_alpha_level(level))
 
     # Get all the weights parameters
     def get_weights(self):

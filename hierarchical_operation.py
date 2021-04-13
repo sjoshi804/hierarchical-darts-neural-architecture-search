@@ -1,11 +1,16 @@
 # External Imports
 from torch import cat  
+import torch
 import torch.nn as nn 
 
 # Internal Imports
 from alpha import Alpha
 from mixed_operation import MixedOperation
-from operations import MANDATORY_OPS, Zero
+from operations import FactorizedReduce, MANDATORY_OPS, StdConv, Zero
+
+# String Constants
+PREPROC_X = "preproc_x"
+PREPROC_X2 = "preproc_x2"
 
 '''
 Channels / Features are managed in the following way: 
@@ -44,6 +49,12 @@ class HierarchicalOperation(nn.Module):
     '''
     output = {}
 
+    # Apply preprocessing if applicable
+    if PREPROC_X in self.ops:
+      x = self.ops[PREPROC_X].forward(x)
+    if PREPROC_X2 in self.ops:
+      x2 = self.ops[PREPROC_X2].forward(x2)
+
     for node_a in range(0, self.num_nodes):
       for node_b in range(node_a + 1, self.num_nodes):
 
@@ -53,7 +64,10 @@ class HierarchicalOperation(nn.Module):
         if (node_a == 0): 
           # for node_a = 0, it is trivial, input of entire module / first input
           input = x
-        elif (node_a == 1 and x2 != None):
+          if (node_b == 1 and type(x2) != type(None)):
+            # If edge between 0 and 1 on top-level - skip, edge doesn't exist
+            continue
+        elif (node_a == 1 and type(x2) != type(None)):
           # if top level, then x2 provided then use for second node
           input = x2
         else: 
@@ -68,11 +82,10 @@ class HierarchicalOperation(nn.Module):
         output[edge] = self.ops[str(edge)].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
-    # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
     return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int, is_reduction=False, input_stride=1):
+  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -80,6 +93,7 @@ class HierarchicalOperation(nn.Module):
     TODO: Perhaps add a coin flip that drops paths entirely? Borrwoing from drop_path in darts
     '''
 
+        
     # Initialize variables
     num_nodes = alpha.num_nodes_at_level[level]
     dag = {} # from stringified tuple of edge -> nn.module (to construct nn.ModuleDict from)
@@ -100,9 +114,21 @@ class HierarchicalOperation(nn.Module):
       '''
       Determine channels_in
       '''
-      # If not the first node then channels_in must be computed by sum of channels of input edges
-      if (node_a != 0):
+      if node_a == 0:
+        channels_in = channels_in_x1
+      else:
         channels_in = sum(nodes_channels_out[:node_a]) 
+
+      '''
+      Determine Pre-Processing If Necessary
+      '''
+      if alpha.num_levels - 1 == level:
+        if prev_reduction: 
+          dag[PREPROC_X] = FactorizedReduce(channels_in_x1, channels, affine=False)
+        else:
+          dag[PREPROC_X] = StdConv(channels_in_x1, channels, 1, 1, 0, affine=False)
+        dag[PREPROC_X2] = StdConv(channels_in_x2, channels, 1, 1, 0, affine=False)
+        channels_in = channels
 
       '''
       Determine base set of operations
@@ -112,10 +138,7 @@ class HierarchicalOperation(nn.Module):
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
-        print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
         for key in primitives: 
-          base_operations.append(primitives[key](C=channels_in, stride=1, affine=False))
-          print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
           base_operations.append(primitives[key](C=channels_in, stride=stride, affine=False))
 
       else: 
@@ -126,8 +149,8 @@ class HierarchicalOperation(nn.Module):
             alpha=alpha,
             alpha_dag=alpha.parameters[level-1][op_num],
             primitives=primitives,
-            channels_in=channels_in,
-            stride=stride
+            channels_in_x1=channels_in,
+            input_stride=stride
           ))
 
         # Append zero operation
