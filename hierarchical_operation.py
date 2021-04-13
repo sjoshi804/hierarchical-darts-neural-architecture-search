@@ -56,29 +56,30 @@ class HierarchicalOperation(nn.Module):
       x2 = self.ops[PREPROC_X2].forward(x2)
 
     for node_a in range(0, self.num_nodes):
+      # For a given edge, determine the input to the starting node
+      if (node_a == 0): 
+        # for node_a = 0, it is trivial, input of entire module / first input
+        input = x
+      elif (node_a == 1 and type(x2) != type(None)):
+        # if top level, then x2 provided then use for second node
+        input = x2
+      else: 
+        # otherwise it is the concatentation of the output of every edge (node, node_a)
+        input = []
+        for prev_node in range(0, node_a):
+          input.append(output[(prev_node, node_a)])
+        try:
+          input = cat(tuple(input), dim=1) 
+        except:
+          print(node_a, int(type(x2) != type(None)))
+
       for node_b in range(node_a + 1, self.num_nodes):
 
-        # For a given edge, determine the input to the starting node
+        if (node_b == 1 and type(x2) != type(None)):
+          # If edge between 0 and 1 on top-level - skip, edge doesn't exist
+          continue
+        
         edge = (node_a, node_b)
-
-        if (node_a == 0): 
-          # for node_a = 0, it is trivial, input of entire module / first input
-          input = x
-          if (node_b == 1 and type(x2) != type(None)):
-            # If edge between 0 and 1 on top-level - skip, edge doesn't exist
-            continue
-        elif (node_a == 1 and type(x2) != type(None)):
-          # if top level, then x2 provided then use for second node
-          input = x2
-        else: 
-          # otherwise it is the concatentation of the output of every edge (node, node_a)
-          input = []
-
-          for prev_node in range(0, node_a):
-            input.append(output[(prev_node, node_a)])
-
-          input = cat(tuple(input), dim=1) 
-
         output[edge] = self.ops[str(edge)].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
@@ -115,7 +116,7 @@ class HierarchicalOperation(nn.Module):
       Determine channels_in
       '''
       if node_a == 0:
-        channels_in = channels_in_x1
+        channels_in = channels_in_x1 
       else:
         channels_in = sum(nodes_channels_out[:node_a]) 
 
@@ -171,7 +172,7 @@ class HierarchicalOperation(nn.Module):
       else:
         offset = 1
 
-      # Loop through all node_b > node_a to create mixed operation on every outgoing edge from node_a 
+      # Loop through all node_b >= node_a + offset to create mixed operation on every outgoing edge from node_a 
       for node_b in range(node_a + offset, num_nodes):
         
         # Create mixed operation on outgiong edge
