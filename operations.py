@@ -60,8 +60,8 @@ class Zero(nn.Module):
 
   def forward(self, x):
     if (self.channels_in < self.channels_out):
-      #Add extra channels to make channels_out sufficient, this will break if stride!=1 anywhere in model
-      feature_map = [[0.] * len(x[0][0][0])] * len(x[0][0])
+      #TODO: Add extra channels to make channels_out sufficient, this will break if stride!=1 anywhere in model
+      feature_map = [[0.] * (len(x[0][0][0])//self.stride)] * (len(x[0][0])//self.stride)
       output = tensor(([[feature_map] * (self.channels_out)] * len(x)))
       return output.to(x.device)
     elif (self.channels_in > self.channels_out ):
@@ -213,6 +213,7 @@ class FactorizedReduce(nn.Module):
     self.bn = nn.BatchNorm2d(C_out, affine=affine)
 
   def forward(self, x):
+    print(x.shape)
     x = self.relu(x)
     out = cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
     out = self.bn(out)
