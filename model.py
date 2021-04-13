@@ -62,7 +62,7 @@ class Model(nn.Module):
 
     # Initialize channels
     curr_channels = channels_start 
-    
+
     # Create cells
     for i in range(0, num_cells):
       # Determine channels
@@ -74,7 +74,7 @@ class Model(nn.Module):
         prev_channels = channels_pre_processing
       else:
         prev_channels = self.main_net[i - 1].channels_out
-
+      
       if i in reduction_cell_indices:
         # Reduction Cell - halve feature map, double # features
         curr_channels *= 2
@@ -144,10 +144,6 @@ class Model(nn.Module):
       # Append to output
       output.append(self.main_net[i].forward(x_prev_prev, x_prev))
     y = output[-1]
-    
-    if self.writer is not None:
-      pass
-      #self.writer.add_graph(self.top_level_op, x)
 
     '''
     Post-processing Neural Network Layers
