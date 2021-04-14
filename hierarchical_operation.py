@@ -68,7 +68,7 @@ class HierarchicalOperation(nn.Module):
         input = []
         for prev_node in range(0, node_a):
           input.append(output[(prev_node, node_a)])
-          input = cat(tuple(input), dim=1) 
+        input = cat(tuple(input), dim=1) 
 
       for node_b in range(node_a + 1, self.num_nodes):
 
