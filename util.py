@@ -7,6 +7,7 @@ from alpha import Alpha
 from functools import wraps
 from model_controller import ModelController
 from time import time
+import math
 import numpy as np
 import os
 import pickle
@@ -234,3 +235,19 @@ def parse_gpus(gpus):
             return [int(s) for s in gpus.split(',')]
     else:
         return [0]
+
+def det_cell_size(num_darts_nodes: int):
+    num_darts_nodes += 1 # Since output node counts as node for us
+    num_ops = {}
+    def binom(n, k):
+        return math.factorial(n) // math.factorial(k) // math.factorial(n - k)
+    num_ops_darts = binom(num_darts_nodes, 2) - 3
+    for n in range(3, num_darts_nodes):
+        for m in range(4, num_darts_nodes):
+            num_ops[(n, m)] = (binom(m, 2) - 3) * binom(n, 2)
+    sorted_keys = sorted(num_ops.keys(), key=lambda x: abs(num_ops_darts-num_ops[x]))
+    print("DARTS ops", num_ops_darts)
+    print("Closest HDARTS Candidates")
+    for i in range(3):
+        print("Level 0", sorted_keys[i][0], "Level 1", sorted_keys[i][1], "Num Ops", num_ops[sorted_keys[i]])
+    return sorted_keys
