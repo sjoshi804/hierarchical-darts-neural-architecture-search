@@ -213,7 +213,6 @@ class FactorizedReduce(nn.Module):
     self.bn = nn.BatchNorm2d(C_out, affine=affine)
 
   def forward(self, x):
-    print(x.shape)
     x = self.relu(x)
     out = cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
     out = self.bn(out)
