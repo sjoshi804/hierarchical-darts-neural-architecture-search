@@ -1,6 +1,5 @@
 # External Imports
 from torch import cat  
-import torch
 import torch.nn as nn 
 
 # Internal Imports
@@ -72,12 +71,13 @@ class HierarchicalOperation(nn.Module):
 
       for node_b in range(node_a + 1, self.num_nodes):
 
-        if (node_b == 1 and type(x2) != type(None)):
-          # If edge between 0 and 1 on top-level - skip, edge doesn't exist
-          continue
-        
         edge = (node_a, node_b)
-        output[edge] = self.ops[str(edge)].forward(input)
+
+        # If edge doesn't exist, skip it
+        if str(edge) not in self.ops:
+          continue
+        else:       
+          output[edge] = self.ops[str(edge)].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
@@ -174,6 +174,10 @@ class HierarchicalOperation(nn.Module):
       # Loop through all node_b >= node_a + offset to create mixed operation on every outgoing edge from node_a 
       for node_b in range(node_a + offset, num_nodes):
         
+        # If input node at top level, then do not connect to output node
+        if (node_a < 2) and node_b == num_nodes - 1:
+          continue 
+
         # Create mixed operation on outgiong edge
         edge = (node_a, node_b)        
         dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
