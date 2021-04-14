@@ -68,10 +68,7 @@ class HierarchicalOperation(nn.Module):
         input = []
         for prev_node in range(0, node_a):
           input.append(output[(prev_node, node_a)])
-        try:
           input = cat(tuple(input), dim=1) 
-        except:
-          print(node_a, int(type(x2) != type(None)))
 
       for node_b in range(node_a + 1, self.num_nodes):
 
@@ -129,7 +126,9 @@ class HierarchicalOperation(nn.Module):
         else:
           dag[PREPROC_X] = StdConv(channels_in_x1, channels, 1, 1, 0, affine=False)
         dag[PREPROC_X2] = StdConv(channels_in_x2, channels, 1, 1, 0, affine=False)
-        channels_in = channels
+        # If input node
+        if node_a < 2:
+          channels_in = channels
 
       '''
       Determine base set of operations
@@ -176,7 +175,7 @@ class HierarchicalOperation(nn.Module):
       for node_b in range(node_a + offset, num_nodes):
         
         # Create mixed operation on outgiong edge
-        edge = (node_a, node_b)
+        edge = (node_a, node_b)        
         dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
 
     '''
