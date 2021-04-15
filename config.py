@@ -9,6 +9,9 @@ from operations import LEN_OPS
 
 # DEFAULTS 
 
+# LOGGING Congig
+LOGDIR = "logs"
+
 # DATASET Config
 dir_path = os.getcwd()
 DATASET =  "mnist"
@@ -114,7 +117,7 @@ class SearchConfig(BaseConfig):
                         '`all` indicates use all gpus.')
     parser.add_argument('--epochs', type=int, default=EPOCHS, help='# of training epochs')
     parser.add_argument('--workers', type=int, default=1, help='# of workers')
-    parser.add_argument('--logdir', default="runs", help="directory to write tensorboard logs to. Do not append /.")
+    parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
     parser.add_argument('--learnt_model_path', default="learnt_models", help="directory to save learnt models in")

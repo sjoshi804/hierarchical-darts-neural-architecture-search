@@ -1,5 +1,6 @@
 # External Imports
 from datetime import datetime
+import pprint
 import signal
 import sys
 import torch
@@ -34,7 +35,7 @@ class HDARTS:
                 hparams[key] = config.__dict__[key]
         
         # Print config to logs
-        print(hparams)
+        pprint.pprint(hparams)
 
         # Commented out for Hoffman Cluster
         # self.writer.add_hparams(hparams, {'accuracy': 0})
