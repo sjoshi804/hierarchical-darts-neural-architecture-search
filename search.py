@@ -115,7 +115,7 @@ class HDARTS:
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
-            lr = w_lr_scheduler.get_last_lr()[0]
+            lr = w_lr_scheduler.get_lr()[0]
 
             # Training
             self.train(
