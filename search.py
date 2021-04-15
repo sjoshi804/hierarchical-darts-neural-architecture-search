@@ -1,6 +1,5 @@
 # External Imports
 from datetime import datetime
-import os
 import signal
 import sys
 import torch
@@ -76,14 +75,16 @@ class HDARTS:
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
- 
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN)
+
         # Alpha Optimizer - one for each level
         alpha_optim = []
         for level in range(0, config.NUM_LEVELS):
             alpha_optim.append(torch.optim.Adam(
                     params=self.model.get_alpha_level(level),
                     lr=config.ALPHA_LR,
-                    weight_decay=config.ALPHA_WEIGHT_DECAY))
+                    weight_decay=config.ALPHA_WEIGHT_DECAY,
+                    beta=config.ALPHA_MOMENTUM))
  
  
         # Train / Validation Split
@@ -109,7 +110,9 @@ class HDARTS:
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
- 
+            w_lr_scheduler.step()
+            lr = w_lr_scheduler.get_lr()[0]
+
             # Training
             self.train(
                 train_loader=train_loader,
@@ -117,7 +120,8 @@ class HDARTS:
                 model=self.model,
                 w_optim=w_optim,
                 alpha_optim=alpha_optim,
-                epoch=epoch)
+                epoch=epoch,
+                lr=lr)
 
             # Validation
             cur_step = (epoch+1) * len(train_loader)
@@ -142,13 +146,16 @@ class HDARTS:
         # Terminate
         self.terminate()
  
-    def train(self, train_loader, valid_loader, model: ModelController, w_optim, alpha_optim, epoch):
+    def train(self, train_loader, valid_loader, model: ModelController, w_optim, alpha_optim, epoch, lr):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
 
         cur_step = epoch*len(train_loader)
- 
+        
+        # Log LR
+        self.writer.add_scalar('train/lr', lr, epoch)
+
         # Prepares the model for training - 'training mode'
         model.train()
 
