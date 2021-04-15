@@ -72,7 +72,9 @@ class HierarchicalOperation(nn.Module):
         # otherwise it is the concatentation of the output of every edge (node, node_a)
         input = []
         for prev_node in range(0, node_a):
-          input.append(output[(prev_node, node_a)])
+            edge = str((prev_node, node_a))
+            if edge in output: # Ensure edge exists
+              input.append(output[edge])
         input = cat(tuple(input), dim=1) 
 
       for node_b in range(node_a + 1, self.num_nodes):
@@ -86,7 +88,11 @@ class HierarchicalOperation(nn.Module):
           output[edge] = self.ops[edge].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
-    return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
+    if type(x2) != type(None): # if top level skip input nodes
+      start_node = 2
+    else:
+      start_node = 0
+    return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, input_stride=1):

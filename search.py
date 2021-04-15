@@ -89,7 +89,7 @@ class HDARTS:
                     params=self.model.get_alpha_level(level),
                     lr=config.ALPHA_LR,
                     weight_decay=config.ALPHA_WEIGHT_DECAY,
-                    beta=config.ALPHA_MOMENTUM))
+                    betas=config.ALPHA_MOMENTUM))
  
  
         # Train / Validation Split
@@ -115,8 +115,7 @@ class HDARTS:
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
-            w_lr_scheduler.step()
-            lr = w_lr_scheduler.get_lr()[0]
+            lr = w_lr_scheduler.get_last_lr()[0]
 
             # Training
             self.train(
@@ -135,6 +134,9 @@ class HDARTS:
                 model=self.model,
                 epoch=epoch,
                 cur_step=cur_step)
+
+            # Learning Rate Step 
+            w_lr_scheduler.step()
 
             # Save Checkpoint
             if best_top1 < top1:
