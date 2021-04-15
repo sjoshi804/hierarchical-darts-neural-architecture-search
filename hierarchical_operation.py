@@ -40,7 +40,13 @@ class HierarchicalOperation(nn.Module):
 
     # Determine channels out - simply a sum of the channels in for the last node
     # We can take this sum by using channels_out property since Mixed operation will have it defined
-    self.channels_out = sum(self.ops[str((prev_node, num_nodes - 1))].channels_out for prev_node in range(0, num_nodes - 1))
+    self.channels_out = 0
+    for prev_node in range(0, num_nodes - 1):
+      edge = str((prev_node, num_nodes - 1))
+      if edge in self.ops: # Check if edge exists
+        self.channels_out += self.ops[edge].channels_out
+      else: 
+        continue 
 
   def forward(self, x, x2=None):
     '''
@@ -71,13 +77,13 @@ class HierarchicalOperation(nn.Module):
 
       for node_b in range(node_a + 1, self.num_nodes):
 
-        edge = (node_a, node_b)
+        edge = str((node_a, node_b))
 
         # If edge doesn't exist, skip it
-        if str(edge) not in self.ops:
+        if edge not in self.ops:
           continue
         else:       
-          output[edge] = self.ops[str(edge)].forward(input)
+          output[edge] = self.ops[edge].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
@@ -165,17 +171,12 @@ class HierarchicalOperation(nn.Module):
       '''
       Create mixed operations on outgoing edges for node_a
       '''
-      # If top level and first node, then we mustn't connect node 0 to node 1 as they are both input nodes
-      if (node_a == 0 and level == alpha.num_levels-1):
-        offset = 2
-      else:
-        offset = 1
-
       # Loop through all node_b >= node_a + offset to create mixed operation on every outgoing edge from node_a 
-      for node_b in range(node_a + offset, num_nodes):
+      for node_b in range(node_a + 1, num_nodes):
         
         # If input node at top level, then do not connect to output node
-        if (node_a < 2) and node_b == num_nodes - 1:
+        # If input node at top level, do not connect to other input node
+        if (node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
           continue 
 
         # Create mixed operation on outgiong edge
