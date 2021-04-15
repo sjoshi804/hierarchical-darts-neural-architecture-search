@@ -102,6 +102,7 @@ def print_alpha(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
     '''
     Saves alpha and weights to be able to recreate model as is.
+    
     '''
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
@@ -120,10 +121,14 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     # Saves alpha and weights to aforementioned directory
     alpha_normal_file_path = os.path.join(current_checkpoint_dir, "alpha_normal.pkl")
     alpha_reduce_file_path = os.path.join(current_checkpoint_dir, "alpha_reduce.pkl")
-    weights_file_path = os.path.join(current_checkpoint_dir, "weights.pkl")
     save_object(model.alpha_normal, alpha_normal_file_path)
     save_object(model.alpha_reduce, alpha_reduce_file_path)
+
+    '''
+    FIXME: Not saving weights due to memory constraints
+    weights_file_path = os.path.join(current_checkpoint_dir, "weights.pkl")
     torch.save(model.model.state_dict(), weights_file_path)
+    '''
 
     # Ensure best checkpoint directory exists
     best_checkpoint_dir = os.path.join(checkpoint_root_dir, "best")
@@ -134,9 +139,7 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     if is_best:
         shutil.copyfile(alpha_normal_file_path, os.path.join(best_checkpoint_dir, "alpha_normal.pkl"))
         shutil.copyfile(alpha_reduce_file_path, os.path.join(best_checkpoint_dir, "alpha_reduce.pkl"))
-        shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
-    
-    # TODO: Save other parameters needed for ModelController constructor
+        # shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
 
 def load_checkpoint(checkpoint_root_dir, epoch=-1):
     '''
