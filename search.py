@@ -84,7 +84,12 @@ class HDARTS:
 
         # Alpha Optimizer - one for each level
         alpha_optim = []
-        for level in range(0, config.NUM_LEVELS):
+        # If trying to simulate DARTS don't bother with alpha optim for higher level
+        if config.NUM_NODES_AT_LEVEL[0] == 2:
+            num_levels = 1
+        else:
+            num_levels = config.NUM_LEVELS
+        for level in range(0, num_levels):
             alpha_optim.append(torch.optim.Adam(
                     params=self.model.get_alpha_level(level),
                     lr=config.ALPHA_LR,

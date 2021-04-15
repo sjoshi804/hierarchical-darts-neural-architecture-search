@@ -57,9 +57,13 @@ class Alpha:
             for dict in alpha_i:
                 for node_a in range(0, num_nodes_at_level[i]):
                     for node_b in range(node_a + 1, num_nodes_at_level[i]):
-                        extra_ops = 1
                         if i == 0:
                             extra_ops = 2
+                        elif num_nodes_at_level[0] == 2: # Trying to simulate DARTS
+                            extra_ops = 0
+                        else:
+                            extra_ops = 1
+
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
                         dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))
