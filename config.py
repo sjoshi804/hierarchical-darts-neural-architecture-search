@@ -101,7 +101,7 @@ class SearchConfig(BaseConfig):
 
     parser.add_argument('--alpha_lr', type=float, default=ALPHA_LR, help='lr for weights')
     parser.add_argument('--alpha_weight_decay', type=float, default=ALPHA_WEIGHT_DECAY, help='weight decay for alpha architecture')
-    parser.add_argument('--alpha_momentum', type=eval, default=ALPHA_MOMENTUM, help='beta (momentum) for alpha architecture adam optimizer')
+    parser.add_argument('--alpha_momentum', type=eval, default=ALPHA_MOMENTUM, help='betas (momentum) for alpha architecture adam optimizer')
 
     parser.add_argument('--weights_lr', type=float, default=WEIGHTS_LR, help='lr for weights')
     parser.add_argument('--weights_lr_min', type=float, default=WEIGHTS_LR_MIN, help='minimum lr for weights')
