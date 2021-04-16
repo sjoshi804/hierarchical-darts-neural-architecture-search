@@ -42,12 +42,12 @@ OPS = {
   'avg_pool_3x3' : lambda C, stride, affine: AvgPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False),
   'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), #(3, stride=stride, padding=1), #add batch normalization here
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
-  '2_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 2, affine=affine),
+  '2_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 2),
   #'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
-  '3_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 3, affine=affine),
+  '3_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 3),
   #'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
   'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
-  '2_stacked_dil_conv_3x3': lambda C, stride, affine: StackedDilConv(C, C, 3, stride, 2, 2, 2, affine=affine),
+  '2_stacked_dil_conv_3x3': lambda C, stride, affine: StackedDilConv(C, C, 3, stride, 2, 2, 2),
   #'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
   'conv_7x1_1x7' : lambda C, stride, affine: Conv7x1_1x7(C, stride, affine=affine)
 }
@@ -128,7 +128,7 @@ class Conv7x1_1x7(nn.Module):
     
 
 class AvgPool2d(nn.Module): 
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True, count_include_pad=False):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False, count_include_pad=False):
     super(AvgPool2d, self).__init__()
     self.op = nn.AvgPool2d(3, stride=stride, padding=padding, count_include_pad=count_include_pad)
     self.channels_out = C_out
@@ -137,7 +137,7 @@ class AvgPool2d(nn.Module):
     return self.op(x)
 
 class MaxPool2d(nn.Module): 
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True, count_include_pad=False):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False, count_include_pad=False):
     super(MaxPool2d, self).__init__()
     self.op = nn.MaxPool2d(3, stride=stride, padding=padding) #(3, stride=stride, padding=padding, count_include_pad=count_include_pad)
     self.channels_out = C_out
@@ -147,7 +147,7 @@ class MaxPool2d(nn.Module):
 
 class ReLUConvBN(nn.Module):
 
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False):
     super(ReLUConvBN, self).__init__()
     self.op = nn.Sequential(
       nn.ReLU(inplace=False),
@@ -160,7 +160,7 @@ class ReLUConvBN(nn.Module):
     return self.op(x)
 
 class ConvBNReLu(nn.Module):
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False):
     super(ConvBNReLu, self).__init__()
     self.op =  nn.Sequential(
             nn.Conv2d(C_in, C_out, kernel_size=kernel_size, stride=stride, padding=padding),
@@ -174,7 +174,7 @@ class ConvBNReLu(nn.Module):
 
 class DilConv(nn.Module):
     
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=False):
     super(DilConv, self).__init__()
     self.op = nn.Sequential(
       nn.ReLU(inplace=False),
@@ -189,7 +189,7 @@ class DilConv(nn.Module):
 
 
 class SepConv(nn.Module):
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False):
     super(SepConv, self).__init__()
     self.op = nn.Sequential(
       nn.ReLU(inplace=False),
@@ -207,7 +207,7 @@ class SepConv(nn.Module):
     return self.op(x)
 
 class StackedSepConv(nn.Module):
-  def init(self, C_in, C_out, kernel_size, stride, padding, num_stacked, affine=True):
+  def init(self, C_in, C_out, kernel_size, stride, padding, num_stacked, affine=False):
       super(StackedSepConv, self).__init__()
       self.ops = nn.ModuleList()
       for i in range(num_stacked):
@@ -223,7 +223,7 @@ class StackedSepConv(nn.Module):
     return x
 
 class StackedDilConv(nn.Module):
-  def init(self, C_in, C_out, kernel_size, stride, padding, dilation, num_stacked, affine=True):
+  def init(self, C_in, C_out, kernel_size, stride, padding, dilation, num_stacked, affine=False):
       super(StackedDilConv, self).__init__()
       self.ops = nn.ModuleList()
       for i in range(num_stacked):
@@ -240,7 +240,7 @@ class StackedDilConv(nn.Module):
 
 class FactorizedReduce(nn.Module):
 
-  def __init__(self, C_in, C_out, affine=True):
+  def __init__(self, C_in, C_out, affine=False):
     super(FactorizedReduce, self).__init__()
     assert C_out % 2 == 0
     self.relu = nn.ReLU(inplace=False)
@@ -258,7 +258,7 @@ class StdConv(nn.Module):
     """ Standard conv
     ReLU - Conv - BN
     """
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=False):
         super().__init__()
         self.net = nn.Sequential(
             nn.ReLU(),
