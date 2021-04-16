@@ -62,7 +62,7 @@ class Model(nn.Module):
 
     # Initialize channels
     curr_channels = channels_start 
-    print(curr_channels)
+
     # Create cells
     for i in range(0, num_cells):
       # Determine channels

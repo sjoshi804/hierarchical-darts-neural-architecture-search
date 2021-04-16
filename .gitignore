@@ -12,4 +12,4 @@ vae_runs
 logs
 mnist_learnt_models
 cifar10_learnt_models
-submit_job.sh
+*job.sh

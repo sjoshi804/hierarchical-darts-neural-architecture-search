@@ -151,7 +151,10 @@ class HDARTS:
                 is_best = False
             print("Saving checkpoint")
             save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
- 
+            
+            # GPU Memory Allocated for Model       
+            print("Max GPU Memory Allocated At Any Point",torch.cuda.max_memory_allocated())
+
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
 
@@ -180,7 +183,7 @@ class HDARTS:
                 val_y = val_y.cuda()
 
             # Alpha Gradient Steps for each level
-            for level in range(0, self.num_levels):
+            for level in range(len(alpha_optim)):
                 alpha_optim[level].zero_grad()
                 logits = model(val_X)
                 loss = model.loss_criterion(logits, val_y)
