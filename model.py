@@ -62,7 +62,7 @@ class Model(nn.Module):
 
     # Initialize channels
     curr_channels = channels_start 
-
+    print(curr_channels)
     # Create cells
     for i in range(0, num_cells):
       # Determine channels
@@ -102,6 +102,7 @@ class Model(nn.Module):
           is_reduction=False,
           prev_reduction=(i-1 in reduction_cell_indices)
         ))
+      print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
 
     '''
     Post-processing Layers
