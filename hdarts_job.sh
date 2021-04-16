@@ -1,4 +1,4 @@
-B1;95;0c#### submit_job.sh START ####
+#### submit_job.sh START ####
 #!/bin/bash
 #$ -cwd
 # error = Merged with joblog
