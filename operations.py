@@ -37,14 +37,18 @@ MANDATORY_OPS = {
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
+# TODO: Try replacing the larger convolutions with stacking of the smaller ones instead
 OPS = {
   'avg_pool_3x3' : lambda C, stride, affine: AvgPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False),
   'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), #(3, stride=stride, padding=1), #add batch normalization here
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
-  'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
-  'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
+  '2_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 2, affine=affine),
+  #'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
+  '3_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 3, affine=affine),
+  #'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
   'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
-  'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
+  '2_stacked_dil_conv_3x3': lambda C, stride, affine: StackedDilConv(C, C, 3, stride, 2, 2, 2, affine=affine),
+  #'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
   'conv_7x1_1x7' : lambda C, stride, affine: Conv7x1_1x7(C, stride, affine=affine)
 }
 
@@ -185,7 +189,6 @@ class DilConv(nn.Module):
 
 
 class SepConv(nn.Module):
-    
   def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
     super(SepConv, self).__init__()
     self.op = nn.Sequential(
@@ -202,6 +205,39 @@ class SepConv(nn.Module):
 
   def forward(self, x):
     return self.op(x)
+
+class StackedSepConv(nn.Module):
+  def init(self, C_in, C_out, kernel_size, stride, padding, num_stacked, affine=True):
+      super(StackedSepConv, self).__init__()
+      self.ops = nn.ModuleList()
+      for i in range(num_stacked):
+        if i == 0:
+          channels_in = C_in
+        else:
+          channels_in = self.ops[i-1].channels_out
+        self.ops.append(SepConv(channels_in, C_out, kernel_size, stride, padding, affine=affine))
+
+  def forward(self, x):
+    for op in self.ops:
+      x = op(x)
+    return x
+
+class StackedDilConv(nn.Module):
+  def init(self, C_in, C_out, kernel_size, stride, padding, dilation, num_stacked, affine=True):
+      super(StackedDilConv, self).__init__()
+      self.ops = nn.ModuleList()
+      for i in range(num_stacked):
+        if i == 0:
+          channels_in = C_in
+        else:
+          channels_in = self.ops[i-1].channels_out
+        self.ops.append(DilConv(channels_in, C_out, kernel_size, stride, padding, dilation, affine=affine))
+
+  def forward(self, x):
+    for op in self.ops:
+      x = op(x)
+    return x
+
 class FactorizedReduce(nn.Module):
 
   def __init__(self, C_in, C_out, affine=True):
