@@ -1,4 +1,4 @@
-from torch import zeros
+from torch import zeros, rand
 from typing import Dict 
 import torch.nn as nn
 
@@ -66,7 +66,7 @@ class Alpha:
 
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
-                        dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))
+                        dict[(node_a, node_b)] = nn.Parameter(rand(num_ops_at_level[i] + extra_ops))
                     
             self.parameters[i] = alpha_i
 
