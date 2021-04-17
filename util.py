@@ -147,8 +147,8 @@ def load_object(filename):
         return obj
 
 def load_best_alpha(checkpoint_root_dir, run_date_time):
-    alpha_normal = load_object(os.path.join(checkpoint_root_dir, run_date_time, "alpha_normal.pkl"))
-    alpha_reduce = load_object(os.path.join(checkpoint_root_dir, run_date_time, "alpha_reduce.pkl"))
+    alpha_normal = load_object(os.path.join(checkpoint_root_dir, run_date_time, "best","alpha_normal.pkl"))
+    alpha_reduce = load_object(os.path.join(checkpoint_root_dir, run_date_time, "best", "alpha_reduce.pkl"))
     return alpha_normal, alpha_reduce
 
 def load_checkpoint(checkpoint_root_dir, epoch=-1):
