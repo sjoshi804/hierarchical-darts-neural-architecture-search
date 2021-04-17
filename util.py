@@ -140,6 +140,16 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
         shutil.copyfile(alpha_normal_file_path, os.path.join(best_checkpoint_dir, "alpha_normal.pkl"))
         shutil.copyfile(alpha_reduce_file_path, os.path.join(best_checkpoint_dir, "alpha_reduce.pkl"))
         # shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
+# Function to load object from file
+def load_object(filename):
+    with open(filename, 'rb') as input:
+        obj = pickle.load(input)
+        return obj
+
+def load_best_alpha(checkpoint_root_dir, run_date_time):
+    alpha_normal = load_object(os.path.join(checkpoint_root_dir, run_date_time, "alpha_normal.pkl"))
+    alpha_reduce = load_object(os.path.join(checkpoint_root_dir, run_date_time, "alpha_reduce.pkl"))
+    return alpha_normal, alpha_reduce
 
 def load_checkpoint(checkpoint_root_dir, epoch=-1):
     '''
@@ -155,12 +165,6 @@ def load_checkpoint(checkpoint_root_dir, epoch=-1):
         checkpoint_dir = str(epoch)
     alpha_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, alpha_file_path)
     weights_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, weights_file_path)
-
-    # Function to load object from file
-    def load_object(filename):
-        with open(filename, 'rb') as input:
-            obj = pickle.load(input)
-            return obj
     
     # Gets alpha and weights
     alpha = load_object(alpha_file_path)
