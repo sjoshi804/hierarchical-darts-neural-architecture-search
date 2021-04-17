@@ -78,7 +78,17 @@ class AverageMeter():
         self.count += n
         self.avg = self.sum / self.count
 
-def print_alpha(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
+def print_alpha(alpha: Alpha):
+    for level in alpha.parameters:
+        print("Level", level)
+        for op_num in range(0, len(alpha.parameters[level])):
+            print("Operation", op_num)
+            for edge in alpha.parameters[level][op_num]:
+                print(edge, alpha.parameters[level][op_num][edge])
+            print("")
+        print("\n")
+
+def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
 
     # Write to temp file for easy parsing
     with open('final_alpha.txt', 'w+') as f:
