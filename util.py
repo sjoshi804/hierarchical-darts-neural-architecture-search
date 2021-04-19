@@ -80,11 +80,11 @@ class AverageMeter():
 
 def print_alpha(alpha: Alpha):
     for level in alpha.parameters:
-        print("Level", level)
+        print("Level", level+1)
         for op_num in range(0, len(alpha.parameters[level])):
             print("Operation", op_num)
             for edge in alpha.parameters[level][op_num]:
-                print(edge, np.argmax(alpha.parameters[level][op_num][edge]), alpha.parameters[level][op_num][edge])
+                print(edge, int(np.argmax(alpha.parameters[level][op_num][edge].cpu().detach())), alpha.parameters[level][op_num][edge])
             print("")
         print("\n")
 
