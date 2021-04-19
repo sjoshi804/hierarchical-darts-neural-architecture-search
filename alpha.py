@@ -66,7 +66,10 @@ class Alpha:
 
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
-                        dict[(node_a, node_b)] = nn.Parameter(rand(num_ops_at_level[i] + extra_ops))
+                        if i == alpha.num_levels - 1:
+                            dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))
+                        else:
+                            dict[(node_a, node_b)] = nn.Parameter(rand(num_ops_at_level[i] + extra_ops))
                     
             self.parameters[i] = alpha_i
 
