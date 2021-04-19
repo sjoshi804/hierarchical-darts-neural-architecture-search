@@ -84,7 +84,7 @@ def print_alpha(alpha: Alpha):
         for op_num in range(0, len(alpha.parameters[level])):
             print("Operation", op_num)
             for edge in alpha.parameters[level][op_num]:
-                print(edge, alpha.parameters[level][op_num][edge])
+                print(edge, np.argmax(alpha.parameters[level][op_num][edge]), alpha.parameters[level][op_num][edge])
             print("")
         print("\n")
 
