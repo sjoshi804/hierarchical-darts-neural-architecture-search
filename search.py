@@ -1,4 +1,5 @@
 # External Imports
+from copy import deepcopy
 from datetime import datetime
 import pprint
 import signal
@@ -56,11 +57,33 @@ class HDARTS:
         # Ensure num of ops at level 0 = num primitives
         config.NUM_OPS_AT_LEVEL[0] = LEN_OPS 
        
-        # Initialize model
+        # Train / Validation Split
+        n_train = (len(train_data) // 100) * config.PERCENTAGE_OF_DATA
+        split = n_train // 2
+        indices = list(range(n_train))
+        train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
+        valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
+        train_loader = torch.utils.data.DataLoader(train_data,
+                                                batch_size=config.BATCH_SIZE,
+                                                sampler=train_sampler,
+                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
+                                                pin_memory=True)
+        valid_loader = torch.utils.data.DataLoader(train_data,
+                                                batch_size=config.BATCH_SIZE,
+                                                sampler=valid_sampler,
+                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
+                                                pin_memory=True)
+
+        ''' 
+        Weight Training Phase 
+        '''
+        # Initialize weight training model i.e. only 1 op at 2nd highest level
+        weight_training_num_ops_at_level = deepcopy(config.NUM_OPS_AT_LEVEL)
+        weight_training_num_ops_at_level[config.NUM_LEVELS - 1] = 1
         self.model = ModelController(
             num_levels=config.NUM_LEVELS,
             num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
-            num_ops_at_level=config.NUM_OPS_AT_LEVEL,
+            num_ops_at_level=weight_training_num_ops_at_level,
             primitives=OPS,
             channels_in=input_channels,
             channels_start=config.CHANNELS_START,
@@ -80,40 +103,8 @@ class HDARTS:
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
-        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN)
-
-        # Alpha Optimizer - one for each level
-        alpha_optim = []
-        # If trying to simulate DARTS don't bother with alpha optim for higher level
-        if config.NUM_NODES_AT_LEVEL[0] == 2:
-            num_levels = 1
-        else:
-            num_levels = config.NUM_LEVELS
-        for level in range(0, num_levels):
-            alpha_optim.append(torch.optim.Adam(
-                    params=self.model.get_alpha_level(level),
-                    lr=config.ALPHA_LR,
-                    weight_decay=config.ALPHA_WEIGHT_DECAY,
-                    betas=config.ALPHA_MOMENTUM))
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN) 
  
- 
-        # Train / Validation Split
-        n_train = (len(train_data) // 100) * config.PERCENTAGE_OF_DATA
-        split = n_train // 2
-        indices = list(range(n_train))
-        train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
-        valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
-        train_loader = torch.utils.data.DataLoader(train_data,
-                                                batch_size=config.BATCH_SIZE,
-                                                sampler=train_sampler,
-                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
-                                                pin_memory=True)
-        valid_loader = torch.utils.data.DataLoader(train_data,
-                                                batch_size=config.BATCH_SIZE,
-                                                sampler=valid_sampler,
-                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
-                                                pin_memory=True)
-
         # Register Signal Handler for interrupts & kills
         signal.signal(signal.SIGINT, self.terminate)
 
@@ -123,7 +114,7 @@ class HDARTS:
             lr = w_lr_scheduler.get_lr()[0]
 
             # Training
-            self.train(
+            self.train_weights(
                 train_loader=train_loader,
                 valid_loader=valid_loader,
                 model=self.model,
@@ -154,6 +145,20 @@ class HDARTS:
             
             # GPU Memory Allocated for Model       
             print("Max GPU Memory Allocated At Any Point",torch.cuda.max_memory_allocated())
+        
+        # Alpha Optimizer - one for each level
+        alpha_optim = []
+        # If trying to simulate DARTS don't bother with alpha optim for higher level
+        if config.NUM_NODES_AT_LEVEL[0] == 2:
+            num_levels = 1
+        else:
+            num_levels = config.NUM_LEVELS
+        for level in range(0, num_levels):
+            alpha_optim.append(torch.optim.Adam(
+                    params=self.model.get_alpha_level(level),
+                    lr=config.ALPHA_LR,
+                    weight_decay=config.ALPHA_WEIGHT_DECAY,
+                    betas=config.ALPHA_MOMENTUM))
 
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
@@ -211,6 +216,55 @@ class HDARTS:
                     "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
                        epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses,
+                        top1=top1, top5=top5))
+ 
+            self.writer.add_scalar('train/loss', loss.item(), cur_step)
+            self.writer.add_scalar('train/top1', prec1.item(), cur_step)
+            self.writer.add_scalar('train/top5', prec5.item(), cur_step)
+            cur_step += 1
+ 
+        print("Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+
+    def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr):
+        top1 = AverageMeter()
+        top5 = AverageMeter()
+        losses = AverageMeter()
+
+        cur_step = epoch*len(valid_loader)
+        
+        # Log LR
+        self.writer.add_scalar('train/lr', lr, epoch)
+
+        # Prepares the model for training - 'training mode'
+        model.train()
+
+        for step, (val_X, val_y) in enumerate(valid_loader):
+            N = trn_X.size(0)
+            if torch.cuda.is_available():
+                trn_X = trn_X.cuda()
+                trn_y = trn_y.cuda()
+                val_X = val_X.cuda()
+                val_y = val_y.cuda()
+
+            # Alpha Gradient Steps for each level
+            for level in range(len(alpha_optim)):
+                alpha_optim[level].zero_grad()
+                logits = model(val_X)
+                loss = model.loss_criterion(logits, val_y)
+                loss.backward()
+                alpha_optim[level].step()
+ 
+            prec1, prec5 = accuracy(logits, trn_y, topk=(1, 5))
+            losses.update(loss.item(), N)
+            top1.update(prec1.item(), N)
+            top5.update(prec5.item(), N)
+
+            if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+                print(
+                    datetime.now(),
+                    "Alpha Train (Using Validation Loss): [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
+                       epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
                         top1=top1, top5=top5))
  
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
