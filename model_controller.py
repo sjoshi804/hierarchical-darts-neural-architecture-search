@@ -152,3 +152,5 @@ class ModelController(nn.Module):
                 writer=self.writer,
                 test_mode=self.test_mode,
                 shared_weights=shared_weights)
+        # Replace current model with new model - put in separate line to avoid any issues due to call by ref
+        self.model = model

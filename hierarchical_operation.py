@@ -95,7 +95,7 @@ class HierarchicalOperation(nn.Module):
     return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, input_stride=1):
+  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -193,3 +193,13 @@ class HierarchicalOperation(nn.Module):
     Return HierarchicalOperation created from dag
     '''
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
+
+  # Gets state dictionary for top - 1 level ops
+  def get_shared_weights(self):
+    shared_weights = {}
+    for node_a in range(self.num_nodes):
+      for node_b in range(node_a + 1, self.num_nodes):
+        edge = str((node_a, node_b))
+        if edge in self.ops:
+          shared_weights[edge] = self.ops[edge].get_shared_weights()
+    return shared_weights

@@ -15,7 +15,7 @@ class Model(nn.Module):
   any other neural network might.
   '''
 
-  def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, num_cells: int, writer=None, test_mode=False):
+  def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, primitives: dict, channels_in: int, channels_start: int, stem_multiplier: int,  num_classes: int, num_cells: int, shared_weights=None, writer=None, test_mode=False):
     '''
     Input: 
     - alpha - an object of type Alpha
@@ -24,6 +24,8 @@ class Model(nn.Module):
     - channels_start - the number of channels to start with
     - stem_multiplier - TODO: understand why isn't channels_start * stem_multiplier passed in directly in DARTS implementations
     - num_classes - number of classes that input can be classified into - needed to set up final layers tha map output of hierarchical model to desired output form
+    - num_cells - number of cells in model
+    - shared_weights - list of state dicts for all the top-1 level ops that are being trained using shared weights
     
     Goals: 
     - preprocessing / stem layer(s)
@@ -87,7 +89,8 @@ class Model(nn.Module):
           channels_in_x2=prev_channels,
           channels=curr_channels,
           is_reduction=True,
-          prev_reduction=(i-1 in reduction_cell_indices) 
+          prev_reduction=(i-1 in reduction_cell_indices), 
+          shared_weights=shared_weights 
         ))
       else:
         # Normal Cell
@@ -100,7 +103,8 @@ class Model(nn.Module):
           channels_in_x2=prev_channels,
           channels=curr_channels,
           is_reduction=False,
-          prev_reduction=(i-1 in reduction_cell_indices)
+          prev_reduction=(i-1 in reduction_cell_indices),
+          shared_weights=shared_weights 
         ))
       print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
 
@@ -162,3 +166,9 @@ class Model(nn.Module):
       return logits
     else:
       return y
+
+  def get_shared_weights(self):
+    shared_weights = [] # list of dictionaries that map edges to state_dicts
+    for cell in self.main_net:
+      shared_weights.append(cell.get_shared_weights())
+    return shared_weights

@@ -32,3 +32,9 @@ class MixedOperation(nn.Module):
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
     return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e, dim=-1), self.ops))
+
+  def get_shared_weights(self):
+    if len(self.ops) > 2:
+      raise Exception("Get shared weights called on Mixed Op with more than 1 op (not including Zero)")
+    else:
+      return self.ops[0].state_dict()
