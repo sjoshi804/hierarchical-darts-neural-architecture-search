@@ -234,7 +234,6 @@ class VAEHDARTS:
         print_alpha(self.model.alpha, self.writer)
         
         '''
-        TODO: Implement this for VAE
         # Ensure directories to save in exist
         learnt_model_path = config.LEARNT_MODEL_PATH
         if not os.path.exists(learnt_model_path):

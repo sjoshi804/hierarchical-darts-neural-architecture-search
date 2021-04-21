@@ -105,18 +105,6 @@ class AlphaTest(unittest.TestCase):
                             num_parameters = num_ops_at_level[i] + 1
                         assert(alpha_i[op_num][(node_a, node_b)].equal(zeros(num_parameters)))
 
-    def test_input_validation(self):
-        #TODO: input validation test
-        raise NotImplementedError
-
-    def test_get_alpha_level(self):
-        #TODO: get alpha level test
-        raise NotImplementedError
-
-    def test_set_alpha_level(self):
-        #TODO: set alpha level test
-        raise NotImplementedError
-
 if __name__ == '__main__':
     unittest.main()
 

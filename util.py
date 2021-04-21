@@ -111,8 +111,7 @@ def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoc
 
 def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
     '''
-    Saves alpha and weights to be able to recreate model as is.
-    
+    Saves alpha to be able to learn the model from here if everything crashes.
     '''
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
@@ -133,12 +132,6 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
     alpha_reduce_file_path = os.path.join(current_checkpoint_dir, "alpha_reduce.pkl")
     save_object(model.alpha_normal, alpha_normal_file_path)
     save_object(model.alpha_reduce, alpha_reduce_file_path)
-
-    '''
-    FIXME: Not saving weights due to memory constraints
-    weights_file_path = os.path.join(current_checkpoint_dir, "weights.pkl")
-    torch.save(model.model.state_dict(), weights_file_path)
-    '''
 
     # Ensure best checkpoint directory exists
     best_checkpoint_dir = os.path.join(checkpoint_root_dir, "best")
@@ -181,7 +174,6 @@ def load_checkpoint(checkpoint_root_dir, epoch=-1):
     weights = torch.load(weights_file_path)
 
     return alpha, weights
-    #TODO: Model creation from alpha, weights and other parameters
 
     
 
