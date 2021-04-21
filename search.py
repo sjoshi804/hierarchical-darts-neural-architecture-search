@@ -173,7 +173,7 @@ class HDARTS:
          
         # Training Loop
         best_top1 = 0.
-        for epoch in range(config.EPOCHS):
+        for epoch in range(config.ALPHA_TRAIN_EPOCHS):
             # Training
             self.train_alpha(
                 valid_loader=valid_loader,
