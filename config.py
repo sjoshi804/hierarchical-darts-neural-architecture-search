@@ -129,7 +129,6 @@ class SearchConfig(BaseConfig):
                         '`all` indicates use all gpus.')
     parser.add_argument('--weight_train_epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
     parser.add_argument('--alpha_train_epochs', type=int, default=EPOCHS, help='# of epochs for alpha training')
-    parser.add_argument('--workers', type=int, default=1, help='# of workers')
     parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
@@ -147,10 +146,12 @@ class TrainConfig(BaseConfig):
     parser.add_argument('--name', default='HDARTS')
     parser.add_argument('--datapath', default=DATAPATH)
     parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / fashionmnist')
+
     parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
     parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
-    parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='batch size')
     parser.add_argument('--num_cells', type=int, default=NUM_CELLS, help='number of cells in search model')
+
+    parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='batch size')
     parser.add_argument('--weights_lr', type=float, default=WEIGHTS_LR, help='lr for weights')
     parser.add_argument('--weights_lr_min', type=float, default=WEIGHTS_LR_MIN, help='minimum lr for weights')
     parser.add_argument('--weights_momentum', type=float, default=WEIGHTS_MOMENTUM, help='momentum for weights')
@@ -158,13 +159,13 @@ class TrainConfig(BaseConfig):
                         help='weight decay for weights')
     parser.add_argument('--weights_gradient_clip', type=float, default=WEIGHTS_GRADIENT_CLIP,
                         help='gradient clipping for weights')
+    parser.add_argument('--epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
+
     parser.add_argument('--num_download_workers', type=int, default=NUM_DOWNLOAD_WORKERS)
     parser.add_argument('--print_step_frequency', type=int, default=PRINT_STEP_FREQUENCY, help='print frequency')
     parser.add_argument('--gpus', default='0', help='gpu device ids separated by comma. '
                         '`all` indicates use all gpus.')
-    parser.add_argument('--weight_train_epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
-    parser.add_argument('--workers', type=int, default=1, help='# of workers')
-    parser.add_argument('--logdir', default="", help="directory to write tensorboard logs to. Do not append /.")
+    parser.add_argument('--logdir', default="logs_train", help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_train", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
     parser.add_argument('--best_alpha_path', help="Directory where the best alpha normal and alpha reduce are stored")
