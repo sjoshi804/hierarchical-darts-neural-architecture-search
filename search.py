@@ -1,4 +1,5 @@
 # External Imports
+from copy import deepcopy
 from datetime import datetime
 import pprint
 import signal
@@ -56,47 +57,6 @@ class HDARTS:
         # Ensure num of ops at level 0 = num primitives
         config.NUM_OPS_AT_LEVEL[0] = LEN_OPS 
        
-        # Initialize model
-        self.model = ModelController(
-            num_levels=config.NUM_LEVELS,
-            num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
-            num_ops_at_level=config.NUM_OPS_AT_LEVEL,
-            primitives=OPS,
-            channels_in=input_channels,
-            channels_start=config.CHANNELS_START,
-            stem_multiplier=1,
-            num_classes=num_classes,
-            num_cells=config.NUM_CELLS,
-            loss_criterion=loss_criterion,
-            writer=self.writer
-         )
-
-        if torch.cuda.is_available():
-            self.model = self.model.cuda()
- 
-        # Weights Optimizer
-        w_optim = torch.optim.SGD(
-            params=self.model.get_weights(),
-            lr=config.WEIGHTS_LR,
-            momentum=config.WEIGHTS_MOMENTUM,
-            weight_decay=config.WEIGHTS_WEIGHT_DECAY)
-        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN)
-
-        # Alpha Optimizer - one for each level
-        alpha_optim = []
-        # If trying to simulate DARTS don't bother with alpha optim for higher level
-        if config.NUM_NODES_AT_LEVEL[0] == 2:
-            num_levels = 1
-        else:
-            num_levels = config.NUM_LEVELS
-        for level in range(0, num_levels):
-            alpha_optim.append(torch.optim.Adam(
-                    params=self.model.get_alpha_level(level),
-                    lr=config.ALPHA_LR,
-                    weight_decay=config.ALPHA_WEIGHT_DECAY,
-                    betas=config.ALPHA_MOMENTUM))
- 
- 
         # Train / Validation Split
         n_train = (len(train_data) // 100) * config.PERCENTAGE_OF_DATA
         split = n_train // 2
@@ -117,18 +77,48 @@ class HDARTS:
         # Register Signal Handler for interrupts & kills
         signal.signal(signal.SIGINT, self.terminate)
 
+        ''' 
+        Weight Training Phase 
+        '''
+        # Initialize weight training model i.e. only 1 op at 2nd highest level
+        weight_training_num_ops_at_level = deepcopy(config.NUM_OPS_AT_LEVEL)
+        weight_training_num_ops_at_level[config.NUM_LEVELS - 1] = 1
+        self.model = ModelController(
+            num_levels=config.NUM_LEVELS,
+            num_nodes_at_level=config.NUM_NODES_AT_LEVEL,
+            num_ops_at_level=weight_training_num_ops_at_level,
+            primitives=OPS,
+            channels_in=input_channels,
+            channels_start=config.CHANNELS_START,
+            stem_multiplier=config.STEM_MULTIPLIER,
+            num_classes=num_classes,
+            num_cells=config.NUM_CELLS,
+            loss_criterion=loss_criterion,
+            writer=self.writer
+         )
+
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
+ 
+        # Weights Optimizer
+        w_optim = torch.optim.SGD(
+            params=self.model.get_weights(),
+            lr=config.WEIGHTS_LR,
+            momentum=config.WEIGHTS_MOMENTUM,
+            weight_decay=config.WEIGHTS_WEIGHT_DECAY)
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN) 
+ 
+
         # Training Loop
         best_top1 = 0.
-        for epoch in range(config.EPOCHS):
+        for epoch in range(config.WEIGHT_TRAIN_EPOCHS):
             lr = w_lr_scheduler.get_lr()[0]
 
             # Training
-            self.train(
+            self.train_weights(
                 train_loader=train_loader,
-                valid_loader=valid_loader,
                 model=self.model,
                 w_optim=w_optim,
-                alpha_optim=alpha_optim,
                 epoch=epoch,
                 lr=lr)
 
@@ -153,15 +143,65 @@ class HDARTS:
             save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
             
             # GPU Memory Allocated for Model       
-            print("Max GPU Memory Allocated At Any Point",torch.cuda.max_memory_allocated())
+            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated())
 
+        '''
+        Alpha Training Phase
+        '''
+        # Prepare for alpha training by creatmg the extra operations in the model
+        self.model.prepare_alpha_training()
+
+        # Alpha Optimizer - one for each level
+        alpha_optim = []
+        # If trying to simulate DARTS don't bother with alpha optim for higher level
+        if config.NUM_NODES_AT_LEVEL[0] == 2:
+            num_levels = 1
+        else:
+            num_levels = config.NUM_LEVELS
+        for level in range(0, num_levels):
+            alpha_optim.append(torch.optim.Adam(
+                    params=self.model.get_alpha_level(level),
+                    lr=config.ALPHA_LR,
+                    weight_decay=config.ALPHA_WEIGHT_DECAY,
+                    betas=config.ALPHA_MOMENTUM))
+         
+        # Training Loop
+        best_top1 = 0.
+        for epoch in range(config.EPOCHS):
+            # Training
+            self.train_alpha(
+                valid_loader=valid_loader,
+                model=self.model,
+                w_optim=w_optim,
+                epoch=epoch,
+                lr=lr)
+
+            # Validation
+            cur_step = (epoch+1) * len(train_loader)
+            top1 = self.validate(
+                valid_loader=valid_loader,
+                model=self.model,
+                epoch=epoch,
+                cur_step=cur_step)
+
+            # Save Checkpoint
+            if best_top1 < top1:
+                best_top1 = top1
+                is_best = True
+            else:
+                is_best = False
+            print("Saving checkpoint")
+            save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
+            
+            # GPU Memory Allocated for Model       
+            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated())
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
 
         # Terminate
         self.terminate()
  
-    def train(self, train_loader, valid_loader, model: ModelController, w_optim, alpha_optim, epoch, lr):
+    def train_weights(self, train_loader, model: ModelController, w_optim, alpha_optim, epoch, lr):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
@@ -174,21 +214,11 @@ class HDARTS:
         # Prepares the model for training - 'training mode'
         model.train()
 
-        for step, ((trn_X, trn_y), (val_X, val_y)) in enumerate(zip(train_loader, valid_loader)):
+        for step, (trn_X, trn_y) in enumerate(train_loader):
             N = trn_X.size(0)
             if torch.cuda.is_available():
                 trn_X = trn_X.cuda()
                 trn_y = trn_y.cuda()
-                val_X = val_X.cuda()
-                val_y = val_y.cuda()
-
-            # Alpha Gradient Steps for each level
-            for level in range(len(alpha_optim)):
-                alpha_optim[level].zero_grad()
-                logits = model(val_X)
-                loss = model.loss_criterion(logits, val_y)
-                loss.backward()
-                alpha_optim[level].step()
 
             # Weights Step
             w_optim.zero_grad()
@@ -208,7 +238,7 @@ class HDARTS:
             if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(train_loader)-1:
                 print(
                     datetime.now(),
-                    "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Weight Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
                        epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses,
                         top1=top1, top5=top5))
@@ -218,7 +248,54 @@ class HDARTS:
             self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
  
-        print("Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+        print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+
+    def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr):
+        top1 = AverageMeter()
+        top5 = AverageMeter()
+        losses = AverageMeter()
+
+        cur_step = epoch*len(valid_loader)
+        
+        # Log LR
+        self.writer.add_scalar('train/lr', lr, epoch)
+
+        # Prepares the model for training - 'training mode'
+        model.train()
+
+        for step, (val_X, val_y) in enumerate(valid_loader):
+            N = val_X.size(0)
+            if torch.cuda.is_available():
+                val_X = val_X.cuda()
+                val_y = val_y.cuda()
+
+            # Alpha Gradient Steps for each level
+            for level in range(len(alpha_optim)):
+                alpha_optim[level].zero_grad()
+                logits = model(val_X)
+                loss = model.loss_criterion(logits, val_y)
+                loss.backward()
+                alpha_optim[level].step()
+ 
+            prec1, prec5 = accuracy(logits, val_y, topk=(1, 5))
+            losses.update(loss.item(), N)
+            top1.update(prec1.item(), N)
+            top5.update(prec5.item(), N)
+
+            if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+                print(
+                    datetime.now(),
+                    "Alpha Train (Using Validation Loss): [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
+                       epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
+                        top1=top1, top5=top5))
+ 
+            self.writer.add_scalar('train/loss', loss.item(), cur_step)
+            self.writer.add_scalar('train/top1', prec1.item(), cur_step)
+            self.writer.add_scalar('train/top5', prec5.item(), cur_step)
+            cur_step += 1
+ 
+        print("Alpha Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
  
  
     def validate(self, valid_loader, model, epoch, cur_step):
