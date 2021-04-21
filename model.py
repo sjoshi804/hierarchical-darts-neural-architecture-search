@@ -90,7 +90,7 @@ class Model(nn.Module):
           channels=curr_channels,
           is_reduction=True,
           prev_reduction=(i-1 in reduction_cell_indices), 
-          shared_weights=shared_weights 
+          shared_weights=None if shared_weights is None else shared_weights[i] 
         ))
       else:
         # Normal Cell
@@ -104,7 +104,7 @@ class Model(nn.Module):
           channels=curr_channels,
           is_reduction=False,
           prev_reduction=(i-1 in reduction_cell_indices),
-          shared_weights=shared_weights 
+          shared_weights=None if shared_weights is None else shared_weights[i] 
         ))
       print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
 

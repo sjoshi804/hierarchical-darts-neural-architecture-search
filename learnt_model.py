@@ -7,7 +7,7 @@ from alpha import Alpha
 from hierarchical_operation import HierarchicalOperation
 
 
-class LearntModel(nn.module):
+class LearntModel(nn.Module):
     def init(self, alpha_normal: Alpha, alpha_reduce: Alpha, num_cells: int, channels_in: int, channels_start: int, stem_multiplier: int, num_classes: int, primitives):
 
         '''

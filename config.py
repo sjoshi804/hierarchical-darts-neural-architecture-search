@@ -64,11 +64,6 @@ def parse_gpus(gpus):
         return [0]
 
 class BaseConfig(argparse.Namespace):
-  def __init__(self, args) -> None:
-      super()
-      self.uppercaseParserArgs(args)
-      self.gpus = parse_gpus(self.gpus)
-
   def print_params(self, prtf=print):
     prtf("")
     prtf("Parameters:")
@@ -84,13 +79,7 @@ class BaseConfig(argparse.Namespace):
 
     return text
 
-  def uppercaseParserArgs(self, args):
-    # Make separate list so as not to change
-    # size of whats being iterated
-    parserArgs = list(vars(args))
-    for var_name in parserArgs:
-      newVal = getattr(args, var_name)
-      setattr(args, var_name.upper(), newVal)
+ 
 
 
 class SearchConfig(BaseConfig):
@@ -125,8 +114,6 @@ class SearchConfig(BaseConfig):
 
     parser.add_argument('--num_download_workers', type=int, default=NUM_DOWNLOAD_WORKERS)
     parser.add_argument('--print_step_frequency', type=int, default=PRINT_STEP_FREQUENCY, help='print frequency')
-    parser.add_argument('--gpus', default='0', help='gpu device ids separated by comma. '
-                        '`all` indicates use all gpus.')
     parser.add_argument('--weight_train_epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
     parser.add_argument('--alpha_train_epochs', type=int, default=EPOCHS, help='# of epochs for alpha training')
     parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
@@ -137,9 +124,19 @@ class SearchConfig(BaseConfig):
 
   def __init__(self):
     parser = self.build_parser()
+
     args = parser.parse_args()
-    super().__init__(args)
-    
+    self.uppercaseParserArgs(args)
+
+    super().__init__(**vars(args))
+  
+  def uppercaseParserArgs(self, args):
+    # Make separate list so as not to change
+    # size of whats being iterated
+    parserArgs = list(vars(args))
+    for var_name in parserArgs:
+      newVal = getattr(args, var_name)
+      setattr(args, var_name.upper(), newVal)
 class TrainConfig(BaseConfig):
   def build_parser(self):
     parser = get_parser("Train config")
@@ -173,6 +170,17 @@ class TrainConfig(BaseConfig):
   
   def __init__(self):
     parser = self.build_parser()
+
     args = parser.parse_args()
-    super().__init__(args)    
+    self.uppercaseParserArgs(args)
+
+    super().__init__(**vars(args))
+
+  def uppercaseParserArgs(self, args):
+    # Make separate list so as not to change
+    # size of whats being iterated
+    parserArgs = list(vars(args))
+    for var_name in parserArgs:
+      newVal = getattr(args, var_name)
+      setattr(args, var_name.upper(), newVal) 
     

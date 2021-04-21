@@ -9,7 +9,6 @@ import torch.nn as nn
  
 # Internal Imports
 from config import SearchConfig
-from learnt_model import LearntModel
 from model_controller import ModelController
 from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
@@ -109,7 +108,7 @@ class HDARTS:
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
-        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.epochs, eta_min=config.WEIGHTS_LR_MIN) 
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.WEIGHT_TRAIN_EPOCHS, eta_min=config.WEIGHTS_LR_MIN) 
  
 
         # Training Loop
@@ -178,7 +177,7 @@ class HDARTS:
             self.train_alpha(
                 valid_loader=valid_loader,
                 model=self.model,
-                w_optim=w_optim,
+                alpha_optim=alpha_optim,
                 epoch=epoch,
                 lr=lr)
 
@@ -207,7 +206,7 @@ class HDARTS:
         # Terminate
         self.terminate()
  
-    def train_weights(self, train_loader, model: ModelController, w_optim, alpha_optim, epoch, lr):
+    def train_weights(self, train_loader, model: ModelController, w_optim, epoch, lr):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
@@ -246,7 +245,7 @@ class HDARTS:
                     datetime.now(),
                     "Weight Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                       epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses,
+                       epoch+1, config.WEIGHT_TRAIN_EPOCHS, step, len(train_loader)-1, losses=losses,
                         top1=top1, top5=top5))
  
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
@@ -254,7 +253,7 @@ class HDARTS:
             self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
  
-        print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+        print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.WEIGHT_TRAIN_EPOCHS, top1.avg))
 
     def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr):
         top1 = AverageMeter()
@@ -294,7 +293,7 @@ class HDARTS:
                     datetime.now(),
                     "Alpha Train (Using Validation Loss): [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                       epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
+                       epoch+1, config.ALPHA_TRAIN_EPOCHS, step, len(valid_loader)-1, losses=losses,
                         top1=top1, top5=top5))
  
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
@@ -302,7 +301,7 @@ class HDARTS:
             self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
  
-        print("Alpha Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+        print("Alpha Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.ALPHA_TRAIN_EPOCHS, top1.avg))
  
  
     def validate(self, valid_loader, model, epoch, cur_step):
@@ -333,32 +332,24 @@ class HDARTS:
                         datetime.now(),
                         "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                         "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                            epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
+                            epoch+1, config.WEIGHT_TRAIN_EPOCHS, step, len(valid_loader)-1, losses=losses,
                             top1=top1, top5=top5))
  
         self.writer.add_scalar('val/loss', losses.avg, cur_step)
         self.writer.add_scalar('val/top1', top1.avg, cur_step)
         self.writer.add_scalar('val/top5', top5.avg, cur_step)
 
-        print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
+        print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.WEIGHT_TRAIN_EPOCHS, top1.avg))
  
         return top1.avg
 
     def terminate(self, signal=None, frame=None):
         # Print alpha
-        print_alpha(self.model.alpha_normal, self.writer, "normal")
-        print_alpha(self.model.alpha_reduce, self.writer, "reduce")
+        print("Alpha Normal")
+        print_alpha(self.model.alpha_normal)
+        print("Alpha Reduce")
+        print_alpha(self.model.alpha_reduce)
         
-        '''
-        # Ensure directories to save in exist
-        learnt_model_path = config.LEARNT_MODEL_PATH
-        if not os.path.exists(learnt_model_path):
-            os.makedirs(learnt_model_path)
-
-        # Save learnt model
-        learnt_model = LearntModel(self.model.model)
-        torch.save(learnt_model, learnt_model_path + "/" + self.dt_string + "_learnt_model")
-        '''
         # Pass exit signal on
         sys.exit(0)
 

@@ -12,7 +12,7 @@ class Alpha:
     - update alpha_i after a gradient update step
     '''
 
-    def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int]):
+    def __init__(self, num_levels: int, num_nodes_at_level: Dict[int, int], num_ops_at_level: Dict[int, int], randomize=False):
         '''
         - num_levels - how many levels to hierarchy, = 1 makes it equivalent to DARTs, must be >= 1
         - num_nodes_at_levels[i] specifies how many nodes the DAGs that make the operations of level i + 1 have, for the top most level this means that the dag - this dictionary must have values for i = 0 .... num_levels - 1 num_nodes_at_level[0] = number of primitive operations
@@ -66,7 +66,7 @@ class Alpha:
 
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
-                        if i == self.num_levels - 1:
+                        if i == self.num_levels - 1 or not randomize:
                             dict[(node_a, node_b)] = nn.Parameter(zeros(num_ops_at_level[i] + extra_ops))
                         else:
                             dict[(node_a, node_b)] = nn.Parameter(rand(num_ops_at_level[i] + extra_ops))

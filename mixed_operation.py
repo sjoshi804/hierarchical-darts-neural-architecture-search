@@ -21,7 +21,7 @@ class MixedOperation(nn.Module):
     self.alpha_e = alpha_e
 
     # Module List
-    self.ops = nn.ModuleList(operations)
+    self.ops = nn.ModuleList([operations[key] for key in sorted(operations.keys())])
 
     # Channels out = channels out of any operation in self._ops as all are same, 
     # recursively will have channels_out defined or primitive will have channels_out defined

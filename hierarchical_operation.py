@@ -30,7 +30,7 @@ class HierarchicalOperation(nn.Module):
   def __init__(self, num_nodes, ops):
     '''
     - num_nodes
-    - ops: dict[stringified tuple for edge -> nn.module] used to initialize the ModuleDict
+    - ops: dict[stringified tuple for edge -> nn.Module] used to initialize the ModuleDict
     '''
     # Superclass constructor
     super().__init__()
@@ -107,7 +107,7 @@ class HierarchicalOperation(nn.Module):
         
     # Initialize variables
     num_nodes = alpha.num_nodes_at_level[level]
-    dag = {} # from stringified tuple of edge -> nn.module (to construct nn.ModuleDict from)
+    dag = {} # from stringified tuple of edge -> nn.Module (to construct nn.ModuleDict from)
     nodes_channels_out = []
 
     for node_a in range(0, num_nodes):
@@ -175,7 +175,7 @@ class HierarchicalOperation(nn.Module):
         i = 0
         for key in primitives: 
           if i in ops_to_create: # Avoid creation of unnecessary ops
-            base_operations.append(primitives[key](C=channels_in, stride=stride, affine=False))
+            base_operations[i] = primitives[key](C=channels_in, stride=stride, affine=False)
           i += 1
       else: 
         # Recursive case, use create_dag to create the list of operations
@@ -188,9 +188,6 @@ class HierarchicalOperation(nn.Module):
             channels_in_x1=channels_in,
             input_stride=stride
           )
-          if shared_weights is not None:
-            ''' Initialize base operation with shared weights '''
-            base_operations[op_num].load_state_dict(shared_weights)
           
         # Append zero operation
         base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride)
@@ -216,6 +213,9 @@ class HierarchicalOperation(nn.Module):
         edge = (node_a, node_b)  
         if not learnt_op:      
           dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
+          ''' Initialize base operation with shared weights if possible '''
+          if shared_weights is not None:
+            base_operations[op_num].load_state_dict(shared_weights[str(edge)])
         else:
           dag[str(edge)] = base_operations[chosen_ops[edge]]
 
