@@ -164,7 +164,9 @@ class HierarchicalOperation(nn.Module):
             channels_in_x1=channels_in,
             input_stride=stride
           ))
-
+          ''' Initialize base operation with shared weights '''
+          base_operations[-1].load_state_dict(shared_weights)
+          
         # Append zero operation
         base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride))
 
