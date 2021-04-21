@@ -115,7 +115,8 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--print_step_frequency', type=int, default=PRINT_STEP_FREQUENCY, help='print frequency')
     parser.add_argument('--gpus', default='0', help='gpu device ids separated by comma. '
                         '`all` indicates use all gpus.')
-    parser.add_argument('--epochs', type=int, default=EPOCHS, help='# of training epochs')
+    parser.add_argument('--weight_train_epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
+    parser.add_argument('--alpha_train_epochs', type=int, default=EPOCHS, help='# of epochs for alpha training')
     parser.add_argument('--workers', type=int, default=1, help='# of workers')
     parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
