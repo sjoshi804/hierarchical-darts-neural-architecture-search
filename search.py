@@ -283,7 +283,7 @@ class HDARTS:
             if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
                 print(
                     datetime.now(),
-                    "Alpha Train (Using Validation Loss): [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Alpha Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
                        epoch+1, config.ALPHA_TRAIN_EPOCHS, step, len(valid_loader)-1, losses=losses,
                         top1=top1, top5=top5))
@@ -293,7 +293,7 @@ class HDARTS:
             self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
  
-        print("Alpha Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.ALPHA_TRAIN_EPOCHS, top1.avg))
+        print("Alpha Train (Uses Validation Loss): [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.ALPHA_TRAIN_EPOCHS, top1.avg))
  
  
     def validate(self, valid_loader, model, epoch, cur_step):
