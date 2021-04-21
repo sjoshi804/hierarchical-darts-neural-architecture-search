@@ -190,6 +190,6 @@ class HierarchicalOperation(nn.Module):
         dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
 
     '''
-    Return HierarchicalOperation created from dag'
+    Return HierarchicalOperation created from dag
     '''
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
