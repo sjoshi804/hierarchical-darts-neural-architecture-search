@@ -181,14 +181,6 @@ class HDARTS:
                 epoch=epoch,
                 lr=lr)
 
-            # Validation
-            cur_step = (epoch+1) * len(train_loader)
-            top1 = self.validate(
-                valid_loader=valid_loader,
-                model=self.model,
-                epoch=epoch,
-                cur_step=cur_step)
-
             # Save Checkpoint
             if best_top1 < top1:
                 best_top1 = top1
