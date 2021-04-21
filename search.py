@@ -272,9 +272,10 @@ class HDARTS:
             # Alpha Gradient Steps for each level
             for level in range(len(alpha_optim)):
                 alpha_optim[level].zero_grad()
-                logits = model(val_X)
-                loss = model.loss_criterion(logits, val_y)
-                loss.backward()
+            logits = model(val_X)
+            loss = model.loss_criterion(logits, val_y)
+            loss.backward()
+            for level in range(len(alpha_optim)):
                 alpha_optim[level].step()
  
             prec1, prec5 = accuracy(logits, val_y, topk=(1, 5))
