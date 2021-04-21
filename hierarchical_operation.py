@@ -1,4 +1,5 @@
 # External Imports
+from numpy import argmax
 from torch import cat  
 import torch.nn as nn 
 
@@ -95,7 +96,7 @@ class HierarchicalOperation(nn.Module):
     return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, input_stride=1):
+  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -143,32 +144,56 @@ class HierarchicalOperation(nn.Module):
           channels_in = channels
 
       '''
-      Determine base set of operations
+      Determine base set of operations 
       '''
-      base_operations = []
+
+      ###################
+      # Select Operations 
+      ###################
+      if learnt_op:
+        chosen_ops = {}
+        # Loop through all node_b >= node_a + offset to create mixed operation on every outgoing edge from node_a 
+        for node_b in range(node_a + 1, num_nodes):
+          
+          # If input node at top level, then do not connect to output node
+          # If input node at top level, do not connect to other input node
+          if (level == alpha.num_levels - 1) and(node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
+            continue 
+
+          # Determine Operation to Choose
+          edge = (node_a, node_b)
+          chosen_ops[edge] = int(argmax(alpha_dag[edge].cpu().detach()))
+        
+        ops_to_create = sorted(chosen_ops.values())
+      else:
+        ops_to_create = range(0, alpha.num_ops_at_level[level])
+      base_operations = {}
 
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
+        i = 0
         for key in primitives: 
-          base_operations.append(primitives[key](C=channels_in, stride=stride, affine=False))
-
+          if i in ops_to_create: # Avoid creation of unnecessary ops
+            base_operations.append(primitives[key](C=channels_in, stride=stride, affine=False))
+          i += 1
       else: 
         # Recursive case, use create_dag to create the list of operations
-        for op_num in range(0, alpha.num_ops_at_level[level]):
-          base_operations.append(HierarchicalOperation.create_dag(
+        for op_num in ops_to_create:
+          base_operations[op_num] = HierarchicalOperation.create_dag(
             level=level-1,
             alpha=alpha,
             alpha_dag=alpha.parameters[level-1][op_num],
             primitives=primitives,
             channels_in_x1=channels_in,
             input_stride=stride
-          ))
-          ''' Initialize base operation with shared weights '''
-          base_operations[-1].load_state_dict(shared_weights)
+          )
+          if shared_weights is not None:
+            ''' Initialize base operation with shared weights '''
+            base_operations[op_num].load_state_dict(shared_weights)
           
         # Append zero operation
-        base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride))
+        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride)
 
       '''
       Determine channels_out
@@ -177,7 +202,7 @@ class HierarchicalOperation(nn.Module):
       nodes_channels_out.append(base_operations[0].channels_out)
 
       '''
-      Create mixed operations on outgoing edges for node_a
+      Create mixed operations / Place selected operations on outgoing edges for node_a
       '''
       # Loop through all node_b >= node_a + offset to create mixed operation on every outgoing edge from node_a 
       for node_b in range(node_a + 1, num_nodes):
@@ -187,9 +212,12 @@ class HierarchicalOperation(nn.Module):
         if (level == alpha.num_levels - 1) and(node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
           continue 
 
-        # Create mixed operation on outgiong edge
-        edge = (node_a, node_b)        
-        dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
+        # Create mixed operation / Select Learnt Operation on outgiong edge
+        edge = (node_a, node_b)  
+        if not learnt_op:      
+          dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
+        else:
+          dag[str(edge)] = base_operations[chosen_ops[edge]]
 
     '''
     Return HierarchicalOperation created from dag

@@ -1,7 +1,7 @@
 # External Imports
 from datetime import datetime
+from pprint import pprint
 from torch.utils.tensorboard.writer import SummaryWriter
-import argparse
 import os
 import signal
 import sys
@@ -9,100 +9,101 @@ import torch
 import torch.nn as nn
 
 # Internal Imports
-from util import AverageMeter, accuracy, get_data
+from config import TrainConfig
+from learnt_model import LearntModel
+from util import AverageMeter, accuracy, get_data, load_best_alpha
+from operations import OPS
 
-# Defaults
-LOGDIR="finetune"
-DATAPATH = "data"
-CHECKPOINT_PATH = "checkpoints_train"
-DATASET = "mnist"
-EPOCHS = 50
-BATCH_SIZE = 64
-LR = 0.01
-LR_MIN = 0.0001
-MOMENTUM = 1.
-WEIGHT_DECAY = 0.0003
-GRADIENT_CLIP = 1.
-NUM_DOWNLOAD_WORKERS = 4
+# Get Config
+config = TrainConfig()
 
 class Train:
     '''
     This class loads a learnt model from a pytorch saved model and trains it.
     '''
-    def __init__(self, path_to_model=None, learnt_model=None, save_model_path=None):
+    def __init__(self):
+        def __init__(self):
+            
+            # Initialize Tensorboard
+            self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+            self.writer = SummaryWriter(config.LOGDIR + "/" + config.config.DATASET +  "/" + str(self.dt_string) + "/")
 
-        # Validate input and load model
-        if path_to_model is not None:
-            self.path_to_model = path_to_model
-            print("Reading model from " + path_to_model)
-            self.model = torch.load(path_to_model)
-        elif learnt_model is not None:
-            self.path_to_model = save_model_path
-            print("Taking model from LearntModel instance from input")
-            self.model = learnt_model
-        else:
-            raise ValueError("No valid value passed to path_to_model or learnt_model, no model to train.")
+            # Set gpu device if cuda is available
+            if torch.cuda.is_available():
+                torch.cuda.set_device(config.gpus[0]) 
 
-    def run(self, datapath=DATAPATH, dataset=DATASET, logdir=LOGDIR, checkpoint_path=CHECKPOINT_PATH, percentage_train_data=80, epochs=50, batch_size=64, lr=LR, lr_min=LR_MIN, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY, gradient_clip=GRADIENT_CLIP):
-
-        # Set GPU Device if available and port model
-        if torch.cuda.is_available():
-            torch.cuda.set_device(0) 
-            self.model = self.model.cuda()
+            # Write config to tensorboard
+            hparams = {}
+            for key in config.__dict__:
+                if type(config.__dict__[key]) is dict or type(config.__dict__[key]) is list:
+                    hparams[key] = str(config.__dict__[key])
+                else:
+                    hparams[key] = config.__dict__[key]
         
-        # Initialize Tensorboard
-        self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
-        self.writer = SummaryWriter(logdir + "/" + dataset +  "/" + str(self.dt_string) + "/")
+            # Print config to logs
+            pprint(hparams)
+            # Set GPU Device if available and port model
+            if torch.cuda.is_available():
+                torch.cuda.set_device(0) 
+                self.model = self.model.cuda()
+            
+            # Load best alpha
+            self.alpha_normal, self.alpha_reduce = load_best_alpha(config.best_alpha_path)  
 
-        # Write config to tensorboard
-        self.writer.add_hparams(
-            {"epochs": epochs, "batch_size": batch_size, "lr": lr, "lr_min": lr_min, "momentum": momentum, "weight_decay": weight_decay, "gradient_clip": gradient_clip},
-             {'accuracy': 0})
-
+    def run(self):
         # Get Data & MetaData
         input_size, input_channels, num_classes, train_data = get_data(
-            dataset_name=dataset,
-            data_path=datapath,
+            dataset_name=config.config.DATASET,
+            data_path=config.DATAPATH,
             cutout_length=0,
             validation=False)
 
         # Train / Validation Split
         n_train = len(train_data)
-        split = n_train // 100 * percentage_train_data
+        split = n_train // 100 * config.PERCENTAGE_OF_DATA
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
         valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
         train_loader = torch.utils.data.DataLoader(train_data,
-                                                batch_size=batch_size,
+                                                batch_size=config.BATCH_SIZE,
                                                 sampler=train_sampler,
-                                                num_workers=NUM_DOWNLOAD_WORKERS,
+                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
         valid_loader = torch.utils.data.DataLoader(train_data,
-                                                batch_size=batch_size,
+                                                batch_size=config.BATCH_SIZE,
                                                 sampler=valid_sampler,
-                                                num_workers=NUM_DOWNLOAD_WORKERS,
+                                                num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
-                    
+        
+        # Create Model
+        self.model = LearntModel(
+            alpha_normal=self.alpha_normal,
+            alpha_reduce=self.alpha_reduce,
+            num_cells=config.NUM_CELLS,
+            channels_in=input_channels,
+            channel_start=config.CHANNELS_START,
+            stem_multiplier=config.STEM_MULTIPLER,
+            num_classes=num_classes,
+            primitives=OPS            
+        )
+
         # Weights Optimizer
         w_optim = torch.optim.SGD(
             params=self.model.parameters(),
-            lr=lr,
-            momentum=momentum,
-            weight_decay=weight_decay)
+            lr=config.WEIGHTS_LR,
+            momentum=config.WEIGHTS_MOMENTUM,
+            weight_decay=config.WEIGHT_DECAY)
 
         # Learning Rate Scheduler
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        w_optim, epochs, eta_min=lr_min)
+        w_optim, epochs, eta_min=config.WEIGHTS_LR_MIN)
 
         # Register Signal Handler for interrupts & kills
         signal.signal(signal.SIGINT, self.terminate)
 
         # Training Loop
         best_top1 = 0.
-        for epoch in range(epochs):
-            
-            # Learning Rate Step
-            lr_scheduler.step()
+        for epoch in range(config.EPOCHS):
             lr = lr_scheduler.get_lr()[0]
 
             # Training (One epoch)
@@ -112,8 +113,11 @@ class Train:
                 w_optim=w_optim,
                 epoch=epoch,
                 lr=lr,
-                gradient_clip=gradient_clip,
-                epochs=epochs)
+                gradient_clip=config.WEIGHTS_GRADIENT_CLIP,
+                epochs=config.EPOCHS)
+            
+            # Learning Rate Step
+            lr_scheduler.step()
 
             # Validation (One epoch)
             cur_step = (epoch+1) * len(train_loader)
@@ -122,16 +126,16 @@ class Train:
                 model=self.model,
                 epoch=epoch,
                 cur_step=cur_step,
-                epochs=epochs)
+                epochs=config.EPOCHS)
 
             # Save Checkpoint
             # Creates checkpoint directory if it doesn't exist
-            if not os.path.exists(checkpoint_path + "/" + dataset + "/" + self.dt_string):
-                os.makedirs(checkpoint_path + "/" + dataset + "/" + self.dt_string)
-            torch.save(self.model, checkpoint_path + "/" + dataset + "/" + self.dt_string + "/" + str(epoch) + ".pt")
+            if not os.path.exists(config.config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string):
+                os.makedirs(config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string)
+            torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + str(epoch) + ".pt")
             if best_top1 < top1:
                 best_top1 = top1
-                torch.save(self.model, checkpoint_path + "/" + dataset + "/" + self.dt_string + "/" + "best.pt")
+                torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + "best.pt")
  
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
@@ -238,47 +242,13 @@ class Train:
         sys.exit(0)
 
 if __name__ == '__main__':
-
-    # Register arguments
-    parser = argparse.ArgumentParser(prog="train.py", description="Train a model learnt by Hierarchical DARTS")
-    parser.add_argument("--path_to_model", help="Path for file which stores the model learnt by HDARTS (should end with learnt_model)")
-    parser.add_argument('--datapath', default=DATAPATH, help="Path to store dataset")
-    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / fashionmnist')
-    parser.add_argument('--logdir', default=LOGDIR, help='directory to save tensorboard logs')
-    parser.add_argument('--checkpoint_path', default=CHECKPOINT_PATH, help="Path to checkpoints")
-    parser.add_argument("--epochs", type=int, default=EPOCHS, help="Number of epochs to train for.")
-    parser.add_argument('--batch_size', type=int, default=BATCH_SIZE, help='batch size')
-    parser.add_argument('--lr', type=float, default=LR, help='lr for weights')
-    parser.add_argument('--lr_min', type=float, default=LR_MIN, help='minimum lr for weights')
-    parser.add_argument('--momentum', type=float, default=MOMENTUM, help='momentum for weights')
-    parser.add_argument('--weight_decay', type=float, default=WEIGHT_DECAY, help='weight decay for weights')
-    parser.add_argument('--gradient_clip', type=float, default=GRADIENT_CLIP, help='gradient clipping for weights')
-
-    # Parse arguments
-    args = parser.parse_args()
-    print(args)
-
     # Check for CUDA
     if not torch.cuda.is_available():
         print('No GPU Available')
 
     # Train
-    train = Train(path_to_model=args.path_to_model)
-    train.run(
-        datapath=args.datapath,
-        dataset=args.dataset,
-        logdir=args.logdir,
-        checkpoint_path=args.checkpoint_path,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        lr_min=args.lr_min,
-        momentum=args.momentum,
-        weight_decay=args.weight_decay,
-        gradient_clip=args.gradient_clip)
-
-
-
+    train = Train()
+    train.run()
     
 
     
