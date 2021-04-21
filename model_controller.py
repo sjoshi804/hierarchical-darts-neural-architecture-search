@@ -92,3 +92,20 @@ class ModelController(nn.Module):
             if 'alpha' not in name:
                 weights.append(param)
         return weights
+    
+    # Sets requires grad to false for alpha params / true for weight params
+    def weight_training_mode(self):
+        for name, param in self.named_parameters(recurse=True):
+            if 'alpha' in name:
+                param.requires_grad = False 
+            else:
+                param.requires_grad = True
+    
+    # Sets requires grad to false for weight params / true for alpha params
+    def alpha_training_mode(self):
+        for name, param in self.named_parameters(recurse=True):
+            if 'alpha' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+    
