@@ -109,3 +109,46 @@ class ModelController(nn.Module):
             else:
                 param.requires_grad = False
     
+    # Assumes in alpha training mode overall i.e. weight gradients are turned off
+    # Switches gradient off for all other levels
+    def alpha_training_mode_for_level(self, level):
+        for i in range(self.alpha.num_levels):
+            for param in self.alpha_normal.get_alpha_level(i):
+                if i == level:
+                    param.requires_grad = True 
+                else: 
+                    param.requires_grad = False
+
+    def create_full_supernet(self, num_ops_at_level):
+        self.num_ops_at_level = num_ops_at_level
+        
+        # Initialize Alpha for both types of cells
+        # Normal Cell
+        self.alpha_normal = Alpha(
+            num_levels=self.num_levels,
+            num_nodes_at_level=self.num_nodes_at_level,
+            num_ops_at_level=self.num_ops_at_level
+        )
+
+        self.alpha_reduce = Alpha(
+            num_levels=self.num_levels,
+            num_nodes_at_level=self.num_nodes_at_level,
+            num_ops_at_level=self.num_ops_at_level
+        )
+
+        # Retrieve shared weights
+        shared_weights = self.model.get_shared_weights()
+
+        # Create new model with shared weights as initialization
+        model = Model(
+                alpha_normal=self.alpha_normal,
+                alpha_reduce=self.alpha_reduce,
+                primitives=self.primitives,
+                channels_in=self.channels_in,
+                channels_start=self.channels_start,
+                stem_multiplier=self.stem_multiplier,
+                num_classes=self.num_classes,
+                num_cells=self.num_cells,
+                writer=self.writer,
+                test_mode=self.test_mode,
+                shared_weights=shared_weights)

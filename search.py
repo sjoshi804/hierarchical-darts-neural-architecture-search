@@ -100,6 +100,9 @@ class HDARTS:
         if torch.cuda.is_available():
             self.model = self.model.cuda()
  
+        # Put into weight training mode - turn off gradient for alpha
+        self.model.weight_training_mode()
+
         # Weights Optimizer
         w_optim = torch.optim.SGD(
             params=self.model.get_weights(),
@@ -148,8 +151,11 @@ class HDARTS:
         '''
         Alpha Training Phase
         '''
-        # Prepare for alpha training by creatmg the extra operations in the model
-        self.model.prepare_alpha_training()
+        # Prepare for alpha training by creating the full supernet
+        self.model.create_full_supernet(config.NUM_OPS_AT_LEVEL)
+
+        # Turn off gradient for alpha params
+        self.model.alpha_training_mode()
 
         # Alpha Optimizer - one for each level
         alpha_optim = []
@@ -271,11 +277,11 @@ class HDARTS:
 
             # Alpha Gradient Steps for each level
             for level in range(len(alpha_optim)):
+                model.alpha_training_mode_for_level(level)
                 alpha_optim[level].zero_grad()
-            logits = model(val_X)
-            loss = model.loss_criterion(logits, val_y)
-            loss.backward()
-            for level in range(len(alpha_optim)):
+                logits = model(val_X)
+                loss = model.loss_criterion(logits, val_y)
+                loss.backward()
                 alpha_optim[level].step()
  
             prec1, prec5 = accuracy(logits, val_y, topk=(1, 5))
