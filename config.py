@@ -120,6 +120,8 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
     parser.add_argument('--learnt_model_path', default="learnt_models", help="directory to save learnt models in")
+    parser.add_argument('--gpus', default='0', help='gpu device ids separated by comma. '
+                    '`all` indicates use all gpus.')
     return parser
 
   def __init__(self):
@@ -129,6 +131,7 @@ class SearchConfig(BaseConfig):
     self.uppercaseParserArgs(args)
 
     super().__init__(**vars(args))
+    self.gpus = parse_gpus(self.gpus)
   
   def uppercaseParserArgs(self, args):
     # Make separate list so as not to change
@@ -175,6 +178,7 @@ class TrainConfig(BaseConfig):
     self.uppercaseParserArgs(args)
 
     super().__init__(**vars(args))
+    self.gpus = parse_gpus(self.gpus)
 
   def uppercaseParserArgs(self, args):
     # Make separate list so as not to change
