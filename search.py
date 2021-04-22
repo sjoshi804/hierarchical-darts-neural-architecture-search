@@ -153,6 +153,10 @@ class HDARTS:
         # Prepare for alpha training by creating the full supernet
         self.model.create_full_supernet(config.NUM_OPS_AT_LEVEL)
 
+        # Transfer model to GPU again
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
+
         # Turn off gradient for alpha params
         self.model.alpha_training_mode()
 

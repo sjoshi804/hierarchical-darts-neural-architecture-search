@@ -156,3 +156,5 @@ class ModelController(nn.Module):
                 shared_weights=shared_weights)
         # Replace current model with new model - put in separate line to avoid any issues due to call by ref
         self.model = model
+        if not self.test_mode and torch.cuda.is_available():
+            self.model = self.model.cuda()
