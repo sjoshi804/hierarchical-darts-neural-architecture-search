@@ -105,7 +105,7 @@ class HDARTS:
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
-        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.WEIGHT_TRAIN_EPOCHS, eta_min=config.WEIGHTS_LR_MIN) 
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.EPOCHS, eta_min=config.WEIGHTS_LR_MIN) 
  
 
         # Alpha Optimizer - one for each level
@@ -124,7 +124,7 @@ class HDARTS:
 
         # Training Loop
         best_top1 = 0.
-        for epoch in range(config.WEIGHT_TRAIN_EPOCHS):
+        for epoch in range(config.EPOCHS):
             lr = w_lr_scheduler.get_lr()[0]
 
             # Put into weight training mode - turn off gradient for alpha
@@ -158,7 +158,7 @@ class HDARTS:
                 alpha_optim=alpha_optim,
                 epoch=epoch,
                 lr=lr)
-                
+
             # Save Checkpoint
             if best_top1 < top1:
                 best_top1 = top1
@@ -220,7 +220,7 @@ class HDARTS:
                     datetime.now(),
                     "Weight Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                       epoch+1, config.WEIGHT_TRAIN_EPOCHS, step, len(train_loader)-1, losses=losses,
+                       epoch+1, config.EPOCHS, step, len(train_loader)-1, losses=losses,
                         top1=top1, top5=top5))
  
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
@@ -228,7 +228,7 @@ class HDARTS:
             self.writer.add_scalar('train/top5', prec5.item(), cur_step)
             cur_step += 1
  
-        print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.WEIGHT_TRAIN_EPOCHS, top1.avg))
+        print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
 
     def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr):
         top1 = AverageMeter()
@@ -268,7 +268,7 @@ class HDARTS:
                     datetime.now(),
                     "Alpha Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                     "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                       epoch+1, config.ALPHA_TRAIN_EPOCHS, step, len(valid_loader)-1, losses=losses,
+                       epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
                         top1=top1, top5=top5))
  
             self.writer.add_scalar('val/loss', losses.avg, cur_step)
@@ -276,7 +276,7 @@ class HDARTS:
             self.writer.add_scalar('val/top5', top5.avg, cur_step)
             cur_step += 1
  
-        print("Alpha Train (Uses Validation Loss): [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.ALPHA_TRAIN_EPOCHS, top1.avg))
+        print("Alpha Train (Uses Validation Loss): [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
         return top1.avg
  
  
@@ -308,14 +308,14 @@ class HDARTS:
                         datetime.now(),
                         "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                         "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                            epoch+1, config.WEIGHT_TRAIN_EPOCHS, step, len(valid_loader)-1, losses=losses,
+                            epoch+1, config.EPOCHS, step, len(valid_loader)-1, losses=losses,
                             top1=top1, top5=top5))
  
         self.writer.add_scalar('val/loss', losses.avg, cur_step)
         self.writer.add_scalar('val/top1', top1.avg, cur_step)
         self.writer.add_scalar('val/top5', top5.avg, cur_step)
 
-        print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.WEIGHT_TRAIN_EPOCHS, top1.avg))
+        print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
  
         return top1.avg
 
