@@ -10,6 +10,7 @@ test
 **/.DS_STORE
 vae_runs
 logs
+logs_train
 mnist_learnt_models
 cifar10_learnt_models
 *job.sh
