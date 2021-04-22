@@ -61,7 +61,10 @@ class Train:
         split = n_train // 100 * config.PERCENTAGE_OF_DATA
         indices = list(range(n_train))
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
-        valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
+        if config.PERCENTAGE_OF_DATA < 100:
+            valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:2*split])
+        else:
+            valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 sampler=train_sampler,
@@ -235,11 +238,7 @@ class Train:
 
     def terminate(self, signal=None, frame=None):
         # Save learnt model
-        if self.path_to_model is not None:
-            path_to_model = self.path_to_model + "_trained"
-        else:
-            path_to_model = self.dt_string + "_trained"
-        torch.save(self.model, path_to_model + ".pt")
+        torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + "last.pt")
 
         # Pass exit signal on
         sys.exit(0)

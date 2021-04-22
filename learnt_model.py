@@ -78,6 +78,7 @@ class LearntModel(nn.Module):
                 prev_reduction=(i-1 in reduction_cell_indices),
                 learnt_op=True
                 ))
+            print("Channels In / Out for Cells")
             print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
 
         '''
