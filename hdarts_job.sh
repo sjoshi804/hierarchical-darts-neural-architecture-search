@@ -40,7 +40,7 @@ source activate pytorch-1.3.1-gpu
 echo "-------------------------------------------------"
 echo "                     Running Search              "
 echo "-------------------------------------------------"
-EXPERIMENT="python3 search.py --epochs=10 --channels_start=8 --dataset=cifar10 --num_nodes_at_level='{0:3, 1:5}' --num_download_workers=8 --batch_size=32"
+EXPERIMENT="python3 search.py --weight_train_epochs=1 --alpha_train_epochs=1 --channels_start=8 --dataset=cifar10 --num_nodes_at_level='{0:3, 1:5}' --num_download_workers=8 --batch_size=32"
 
 echo $EXPERIMENT
 eval $EXPERIMENT
