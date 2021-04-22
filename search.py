@@ -160,7 +160,7 @@ class HDARTS:
         if torch.cuda.is_available():
             self.model = self.model.cuda()
 
-        # Turn off gradient for alpha params
+        # Turn off gradient for weight params
         self.model.alpha_training_mode()
 
         # Alpha Optimizer - one for each level
