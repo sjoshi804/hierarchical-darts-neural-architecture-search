@@ -114,8 +114,7 @@ class SearchConfig(BaseConfig):
 
     parser.add_argument('--num_download_workers', type=int, default=NUM_DOWNLOAD_WORKERS)
     parser.add_argument('--print_step_frequency', type=int, default=PRINT_STEP_FREQUENCY, help='print frequency')
-    parser.add_argument('--weight_train_epochs', type=int, default=EPOCHS, help='# of epochs for weight training')
-    parser.add_argument('--alpha_train_epochs', type=int, default=EPOCHS, help='# of epochs for alpha training')
+    parser.add_argument('--epochs', type=int, default=EPOCHS, help='# of epochs for training')
     parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
