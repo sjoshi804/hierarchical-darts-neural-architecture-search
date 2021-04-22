@@ -85,8 +85,7 @@ class HierarchicalOperation(nn.Module):
         # If edge doesn't exist, skip it
         if edge not in self.ops:
           continue
-        elif isinstance(output[edge], MixedOperation):
-          if type(x2) != type(None):
+        elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
           output[edge] = self.ops[edge].forward(input)
