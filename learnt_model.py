@@ -8,7 +8,10 @@ from hierarchical_operation import HierarchicalOperation
 
 
 class LearntModel(nn.Module):
-    def init(self, alpha_normal: Alpha, alpha_reduce: Alpha, num_cells: int, channels_in: int, channels_start: int, stem_multiplier: int, num_classes: int, primitives):
+    def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, num_cells: int, channels_in: int, channels_start: int, stem_multiplier: int, num_classes: int, primitives):
+        
+        # Superclass constructor
+        super().__init__()
 
         '''
         PreProcessing Layer

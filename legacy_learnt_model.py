@@ -8,12 +8,12 @@ from mixed_operation import MixedOperation
 from model import Model
 from operations import Zero
 
-class LearntModel(nn.Module):
+class LegacyLearntModel(nn.Module):
     '''
     - Extracts the final model learnt by HDARTS.
     - Uses weights learned during optimization to initialize the operations.
 
-    This class takes in a Model object and converts it into a learntModel which 
+    This class takes in a Model object and converts it into a LegacyLearntModel which 
     is identical to the model but with the MixedOperations that softmaxed alpha_e 
     to weight the candidate operations replaced by the arg max of the alpha_e.
     '''

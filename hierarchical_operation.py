@@ -110,7 +110,7 @@ class HierarchicalOperation(nn.Module):
     dag = {} # from stringified tuple of edge -> nn.Module (to construct nn.ModuleDict from)
     nodes_channels_out = []
 
-    for node_a in range(0, num_nodes):
+    for node_a in range(0, num_nodes-1):
       
       '''
       Determine stride
@@ -189,14 +189,14 @@ class HierarchicalOperation(nn.Module):
             input_stride=stride
           )
           
-        # Append zero operation
-        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=stride)
+        # Add zero operation
+        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[ops_to_create[0]].channels_out, stride=stride)
 
       '''
       Determine channels_out
       '''
       # Set channels out (identical for all operations in base_operations)
-      nodes_channels_out.append(base_operations[0].channels_out)
+      nodes_channels_out.append(base_operations[ops_to_create[0]].channels_out)
 
       '''
       Create mixed operations / Place selected operations on outgoing edges for node_a

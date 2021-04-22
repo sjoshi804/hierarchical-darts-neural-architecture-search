@@ -5,11 +5,11 @@ import unittest
 
 # Internal Imports 
 from alpha import Alpha 
-from learnt_model import LearntModel
+from legacy_learnt_model import LegacyLearntModel
 from model import Model
 from operations import SIMPLE_OPS, LEN_SIMPLE_OPS
 
-class learntModelTest(unittest.TestCase):
+class LegacyLearntModelTest(unittest.TestCase):
     def test_mixed_operation_finalization(self):
         raise NotImplementedError 
 
@@ -54,7 +54,7 @@ class learntModelTest(unittest.TestCase):
         ]
         ])
 
-        learnt_model = LearntModel(model)
+        learnt_model = LegacyLearntModel(model)
         assert(learnt_model(x).equal(y))
 
 

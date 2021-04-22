@@ -11,7 +11,7 @@ import torch.nn as nn
 # Internal Imports
 from config import TrainConfig
 from learnt_model import LearntModel
-from util import AverageMeter, accuracy, get_data, load_best_alpha
+from util import AverageMeter, accuracy, get_data, load_best_alpha, print_alpha
 from operations import OPS
 
 # Get Config
@@ -21,39 +21,37 @@ class Train:
     '''
     This class loads a learnt model from a pytorch saved model and trains it.
     '''
-    def __init__(self):
-        def __init__(self):
-            
-            # Initialize Tensorboard
-            self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
-            self.writer = SummaryWriter(config.LOGDIR + "/" + config.config.DATASET +  "/" + str(self.dt_string) + "/")
+    def __init__(self):       
+        # Initialize Tensorboard
+        self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+        self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
 
-            # Set gpu device if cuda is available
-            if torch.cuda.is_available():
-                torch.cuda.set_device(config.gpus[0]) 
+        # Set gpu device if cuda is available
+        if torch.cuda.is_available():
+            torch.cuda.set_device(config.gpus[0]) 
 
-            # Write config to tensorboard
-            hparams = {}
-            for key in config.__dict__:
-                if type(config.__dict__[key]) is dict or type(config.__dict__[key]) is list:
-                    hparams[key] = str(config.__dict__[key])
-                else:
-                    hparams[key] = config.__dict__[key]
+        # Write config to tensorboard
+        hparams = {}
+        for key in config.__dict__:
+            if type(config.__dict__[key]) is dict or type(config.__dict__[key]) is list:
+                hparams[key] = str(config.__dict__[key])
+            else:
+                hparams[key] = config.__dict__[key]
+    
+        # Print config to logs
+        pprint(hparams)
+        # Set GPU Device if available and port model
+        if torch.cuda.is_available():
+            torch.cuda.set_device(0) 
+            self.model = self.model.cuda()
         
-            # Print config to logs
-            pprint(hparams)
-            # Set GPU Device if available and port model
-            if torch.cuda.is_available():
-                torch.cuda.set_device(0) 
-                self.model = self.model.cuda()
-            
-            # Load best alpha
-            self.alpha_normal, self.alpha_reduce = load_best_alpha(config.best_alpha_path)  
+        # Load best alpha
+        self.alpha_normal, self.alpha_reduce = load_best_alpha(config.ALPHA_DIR_PATH)  
 
     def run(self):
         # Get Data & MetaData
         input_size, input_channels, num_classes, train_data = get_data(
-            dataset_name=config.config.DATASET,
+            dataset_name=config.DATASET,
             data_path=config.DATAPATH,
             cutout_length=0,
             validation=False)
@@ -75,14 +73,19 @@ class Train:
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
         
-        # Create Model
+        # Create Model 
+        print("Alpha Normal")
+        print_alpha(self.alpha_normal)
+        print("Alpha Reduce")
+        print_alpha(self.alpha_reduce)
+        print("Creating Model from these Alpha\n\n")
         self.model = LearntModel(
             alpha_normal=self.alpha_normal,
             alpha_reduce=self.alpha_reduce,
             num_cells=config.NUM_CELLS,
             channels_in=input_channels,
-            channel_start=config.CHANNELS_START,
-            stem_multiplier=config.STEM_MULTIPLER,
+            channels_start=config.CHANNELS_START,
+            stem_multiplier=config.STEM_MULTIPLIER,
             num_classes=num_classes,
             primitives=OPS            
         )
@@ -92,11 +95,11 @@ class Train:
             params=self.model.parameters(),
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
-            weight_decay=config.WEIGHT_DECAY)
+            weight_decay=config.WEIGHTS_WEIGHT_DECAY)
 
         # Learning Rate Scheduler
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        w_optim, epochs, eta_min=config.WEIGHTS_LR_MIN)
+        w_optim, config.EPOCHS, eta_min=config.WEIGHTS_LR_MIN)
 
         # Register Signal Handler for interrupts & kills
         signal.signal(signal.SIGINT, self.terminate)
@@ -130,7 +133,7 @@ class Train:
 
             # Save Checkpoint
             # Creates checkpoint directory if it doesn't exist
-            if not os.path.exists(config.config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string):
+            if not os.path.exists(config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string):
                 os.makedirs(config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string)
             torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + str(epoch) + ".pt")
             if best_top1 < top1:

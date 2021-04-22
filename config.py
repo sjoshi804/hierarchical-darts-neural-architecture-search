@@ -152,7 +152,7 @@ class TrainConfig(BaseConfig):
     parser.add_argument('--weights_lr', type=float, default=WEIGHTS_LR, help='lr for weights')
     parser.add_argument('--weights_lr_min', type=float, default=WEIGHTS_LR_MIN, help='minimum lr for weights')
     parser.add_argument('--weights_momentum', type=float, default=WEIGHTS_MOMENTUM, help='momentum for weights')
-    parser.add_argument('--weights_weight_decay', type=float, default=WEIGHTS_WEIGHT_DECAY,
+    parser.add_argument('--WEIGHTS_weight_decay', type=float, default=WEIGHTS_WEIGHT_DECAY,
                         help='weight decay for weights')
     parser.add_argument('--weights_gradient_clip', type=float, default=WEIGHTS_GRADIENT_CLIP,
                         help='gradient clipping for weights')
@@ -165,7 +165,7 @@ class TrainConfig(BaseConfig):
     parser.add_argument('--logdir', default="logs_train", help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_train", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
-    parser.add_argument('--best_alpha_path', help="Directory where the best alpha normal and alpha reduce are stored")
+    parser.add_argument('--alpha_dir_path', help="Directory where the various alpha normal and alpha reduce are stored")
     return parser
   
   def __init__(self):
