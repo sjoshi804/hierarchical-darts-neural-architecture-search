@@ -40,6 +40,7 @@ class Model(nn.Module):
     self.alpha_reduce = alpha_reduce
     self.writer = writer
     self.test_mode = test_mode
+
     '''
     Pre-processing / Stem Layers
     '''
@@ -83,7 +84,7 @@ class Model(nn.Module):
         self.main_net.append(HierarchicalOperation.create_dag(
           level=alpha_reduce.num_levels - 1,
           alpha=alpha_reduce,
-          alpha_dag=alpha_reduce.parameters[alpha_reduce.num_levels - 1][0],
+          alpha_dags=[alpha_reduce.parameters[alpha_reduce.num_levels - 1][0]],
           primitives=primitives,
           channels_in_x1=prev_prev_channels,
           channels_in_x2=prev_channels,
@@ -97,7 +98,7 @@ class Model(nn.Module):
         self.main_net.append(HierarchicalOperation.create_dag(
           level=alpha_normal.num_levels - 1,
           alpha=alpha_normal,
-          alpha_dag=alpha_normal.parameters[alpha_normal.num_levels - 1][0],
+          alpha_dags=[alpha_normal.parameters[alpha_normal.num_levels - 1][0]],
           primitives=primitives,
           channels_in_x1=prev_prev_channels,
           channels_in_x2=prev_channels,

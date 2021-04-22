@@ -18,7 +18,7 @@ class MixedOperation(nn.Module):
     super().__init__()
 
     # Initialize weights using alpha_e
-    self.alpha_e = alpha_e
+    self.alpha_e = nn.ParameterList(alpha_e)
 
     # Module List
     self.ops = nn.ModuleList([operations[key] for key in sorted(operations.keys())])
@@ -27,11 +27,15 @@ class MixedOperation(nn.Module):
     # recursively will have channels_out defined or primitive will have channels_out defined
     self.channels_out = self.ops[0].channels_out
 
-  def forward(self, x):
+  def forward(self, x, op_num=0):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e, dim=-1), self.ops))
+    if len(self.ops) == 1:
+      op = self.ops[list(self.ops.keys())[0]]
+      return sum(w * op.forward(x=x, op_num=i) for w, i in zip(F.softmax(self.alpha_e[op_num], dim=-1), range(len(self.alpha_e[op_num]))))
+    else:
+      return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e[op_num], dim=-1), self.ops))
 
   def get_shared_weights(self):
     if len(self.ops) > 2:

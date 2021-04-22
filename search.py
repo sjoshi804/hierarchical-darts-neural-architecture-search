@@ -123,7 +123,7 @@ class HDARTS:
                 w_optim=w_optim,
                 epoch=epoch,
                 lr=lr)
-
+            
             # Validation
             cur_step = (epoch+1) * len(train_loader)
             top1 = self.validate(

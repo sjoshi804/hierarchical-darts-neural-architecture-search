@@ -62,7 +62,7 @@ class Zero(nn.Module):
     self.channels_in = C_in
     self.channels_out = C_out
 
-  def forward(self, x):
+  def forward(self, x, op_num=None):
     if (self.channels_in < self.channels_out):
       feature_map = [[0.] * (len(x[0][0][0])//self.stride)] * (len(x[0][0])//self.stride)
       output = tensor(([[feature_map] * (self.channels_out)] * len(x)))

@@ -49,7 +49,7 @@ class HierarchicalOperation(nn.Module):
       else: 
         continue 
 
-  def forward(self, x, x2=None):
+  def forward(self, x, x2=None, op_num=0):
     '''
     Iteratively compute using each edge of the dag
     '''
@@ -85,7 +85,10 @@ class HierarchicalOperation(nn.Module):
         # If edge doesn't exist, skip it
         if edge not in self.ops:
           continue
-        else:       
+        elif isinstance(output[edge], MixedOperation):
+          if type(x2) != type(None):
+          output[edge] = self.ops[edge].forward(input, op_num=op_num)
+        else:
           output[edge] = self.ops[edge].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
@@ -96,12 +99,14 @@ class HierarchicalOperation(nn.Module):
     return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):
+  def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
     - Called with top-level dag parameters in the model.__init__ and recursively generates entire model
     TODO: Perhaps add a coin flip that drops paths entirely? Borrwoing from drop_path in darts
+    - When using for learnt model extraction ensure that alpha_dags has only one alpha_dag in it
+    - When using for weight sharing model training put all alpha_dags that you want shared in this
     '''
 
         
@@ -162,7 +167,7 @@ class HierarchicalOperation(nn.Module):
 
           # Determine Operation to Choose
           edge = (node_a, node_b)
-          chosen_ops[edge] = int(argmax(alpha_dag[edge].cpu().detach()))
+          chosen_ops[edge] = int(argmax(alpha_dags[0][edge].cpu().detach()))
         
         ops_to_create = sorted(chosen_ops.values())
       else:
@@ -179,15 +184,25 @@ class HierarchicalOperation(nn.Module):
           i += 1
       else: 
         # Recursive case, use create_dag to create the list of operations
-        for op_num in ops_to_create:
-          base_operations[op_num] = HierarchicalOperation.create_dag(
+        if not learnt_op and level == alpha.num_levels - 1:
+          base_operations[0] = HierarchicalOperation.create_dag(
             level=level-1,
             alpha=alpha,
-            alpha_dag=alpha.parameters[level-1][op_num],
+            alpha_dags=alpha.parameters[level-1],
             primitives=primitives,
             channels_in_x1=channels_in,
             input_stride=stride
           )
+        else:
+          for op_num in ops_to_create:
+            base_operations[op_num] = HierarchicalOperation.create_dag(
+              level=level-1,
+              alpha=alpha,
+              alpha_dags=[alpha.parameters[level-1][op_num]],
+              primitives=primitives,
+              channels_in_x1=channels_in,
+              input_stride=stride
+            )
           
         # Add zero operation
         base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[ops_to_create[0]].channels_out, stride=stride)
@@ -212,10 +227,11 @@ class HierarchicalOperation(nn.Module):
         # Create mixed operation / Select Learnt Operation on outgiong edge
         edge = (node_a, node_b)  
         if not learnt_op:      
-          dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
+          dag[str(edge)] = MixedOperation(base_operations, [alpha_dag[edge] for alpha_dag in alpha_dags]) 
           ''' Initialize base operation with shared weights if possible '''
           if shared_weights is not None:
-            base_operations[op_num].load_state_dict(shared_weights[str(edge)])
+            for op_num in base_operations.keys():
+              base_operations[op_num].load_state_dict(shared_weights[str(edge)])
         else:
           dag[str(edge)] = base_operations[chosen_ops[edge]]
 
