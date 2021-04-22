@@ -19,3 +19,10 @@ Goal: Weight Sharing Training
     - Action: Loop through every cell and call method to modify its structure to duplicate the operations
     - Action: Randomize the alpha of the model now - at every level but the top most
 - Question: What about the Zero Operation?
+
+Goal: Weight Sharing w/o duplication of weights
+- Assumption: weight sharing only at the 2nd highest level (not the level where the operation is the cell itself, but the level right below that)
+- (Failed) Idea: Modify mixed op so that in softmax bit it reuses same op (fails because while we can now allow for different alpha at this level, we can't recursively allow it)
+- (Rejected) Idea: Modify the forward functions of HierarchicalOperation and MixedOperation so that they take in alpha as a parameter and accordingly compute - reject - may lead to issues with gradient computation
+- (Failed) Idea: New WeightSharedMixedOp - that takes in n sets of alphas and applies them as required, Modify Hierarchical Op so that it can register a list of alpha dag params as opposed to just the one and - Need some way to modify output of mixed op without creating new ops
+- Idea: MixedOp & Hierarchical Op both take in a list of alphas and the forward operation selects which one to use
