@@ -145,7 +145,7 @@ class HDARTS:
             save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
             
             # GPU Memory Allocated for Model       
-            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated())
+            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated()/(1024*1024))
 
         '''
         Alpha Training Phase
@@ -195,7 +195,7 @@ class HDARTS:
             save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
             
             # GPU Memory Allocated for Model       
-            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated())
+            print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated()/(1024*1024))
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
 
