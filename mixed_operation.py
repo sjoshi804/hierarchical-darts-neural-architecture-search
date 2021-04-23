@@ -42,7 +42,7 @@ class MixedOperation(nn.Module):
       softmaxed_weights = F.softmax(self.alpha_e[0], dim=-1)
 
       # Need to handle zero operation specially here
-      output = [w * op.forward(x, op_num=op_num) for w, op_num in zip(softmaxed_weights[:-1], range(len(self.ops) - 1))]
+      output = [w * op.forward(x, op_num=op_num) for w, op_num in zip(softmaxed_weights[:-1], range(len(self.alpha_e[0]) - 1))]
       output.append(softmaxed_weights[-1] * zero_op(x))
       return sum(output)
     else:
