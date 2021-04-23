@@ -44,13 +44,15 @@ class ModelController(nn.Module):
         self.alpha_normal = Alpha(
             num_levels=self.num_levels,
             num_nodes_at_level=self.num_nodes_at_level,
-            num_ops_at_level=self.num_ops_at_level
+            num_ops_at_level=self.num_ops_at_level,
+            randomize=True
         )
 
         self.alpha_reduce = Alpha(
             num_levels=self.num_levels,
             num_nodes_at_level=self.num_nodes_at_level,
-            num_ops_at_level=self.num_ops_at_level
+            num_ops_at_level=self.num_ops_at_level,
+            randomize=True
         )
 
         # Initialize model with initial alpha
