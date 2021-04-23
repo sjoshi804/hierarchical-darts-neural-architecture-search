@@ -1,5 +1,6 @@
 # External Imports
 from numpy import argmax
+from pprint import pprint
 from torch import cat  
 import torch.nn as nn 
 
@@ -212,10 +213,13 @@ class HierarchicalOperation(nn.Module):
         # Create mixed operation / Select Learnt Operation on outgiong edge
         edge = (node_a, node_b)  
         if not learnt_op:      
-          dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
           ''' Initialize base operation with shared weights if possible '''
           if shared_weights is not None:
-            base_operations[op_num].load_state_dict(shared_weights[str(edge)])
+            for op_num in base_operations.keys():
+              if isinstance(base_operations[op_num], Zero):
+                continue
+              base_operations[op_num].load_state_dict(shared_weights[str(edge)])
+          dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
         else:
           dag[str(edge)] = base_operations[chosen_ops[edge]]
 
