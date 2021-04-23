@@ -34,11 +34,11 @@ class MixedOperation(nn.Module):
     '''
     if len(self.ops) == 2:
       # Get operation that is not zero
-      for _,value in self.ops:
-        if not isinstance(value, Zero):
-          op = value 
+      for base_operation in self.ops:
+        if not isinstance(base_operation, Zero):
+          op = base_operation
         else:
-          zero_op = value
+          zero_op = base_operation
 
       softmaxed_weights = F.softmax(self.alpha_e[op_num], dim=-1)
 
