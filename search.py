@@ -144,7 +144,7 @@ class HDARTS:
             # GPU Memory Allocated for Model in Weight Sharing Phase   
             if epoch == 0:
                 try:
-                    print("Alpha Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated()/(1024*1024*1024), "GB")
+                    print("Weight Training Phase: Max GPU Memory Used",torch.cuda.max_memory_allocated()/(1024*1024*1024), "GB")
                 except: 
                     print("Unable to retrieve memory data")
             
