@@ -209,7 +209,10 @@ class HierarchicalOperation(nn.Module):
             )
           
         # Add zero operation
-        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=base_operations[ops_to_create[0]].channels_out, stride=stride)
+        for key in ops_to_create:
+          if key in base_operations:
+            zero_channels_out = key.channels_out
+        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=zero_channels_out, stride=stride)
 
       '''
       Determine channels_out
