@@ -178,6 +178,8 @@ class HierarchicalOperation(nn.Module):
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
         i = 0
         for key in primitives: 
+          if key == "zero":
+            continue # Created later
           if i in ops_to_create: # Avoid creation of unnecessary ops
             base_operations[i] = primitives[key](C=channels_in, stride=stride, affine=False)
           i += 1
