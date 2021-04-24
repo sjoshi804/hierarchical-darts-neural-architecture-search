@@ -218,7 +218,7 @@ class HierarchicalOperation(nn.Module):
             for op_num in base_operations.keys():
               if isinstance(base_operations[op_num], Zero):
                 continue
-              base_operations[op_num].load_state_dict(shared_weights[str(edge)])
+              HierarchicalOperation.load_shared_weights(base_operations[op_num].named_parameters(), shared_weights[str(edge)])
           dag[str(edge)] = MixedOperation(base_operations, alpha_dag[edge]) 
         else:
           dag[str(edge)] = base_operations[chosen_ops[edge]]
@@ -227,6 +227,15 @@ class HierarchicalOperation(nn.Module):
     Return HierarchicalOperation created from dag
     '''
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
+
+  # Load shared weights
+  @staticmethod
+  def load_shared_weights(dest_op_params, src_op_params):
+    for name, param in src_op_params:
+      if "alpha" in name:
+        continue 
+      if name in dest_op_params:
+        dest_op_params[name].data.copy_(param.data)
 
   # Gets state dictionary for top - 1 level ops
   def get_shared_weights(self):

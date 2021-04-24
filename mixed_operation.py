@@ -37,4 +37,4 @@ class MixedOperation(nn.Module):
     if len(self.ops) > 2:
       raise Exception("Get shared weights called on Mixed Op with more than 1 op (not including Zero)")
     else:
-      return self.ops[0].state_dict()
+      return self.ops[0].named_parameters()
