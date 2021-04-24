@@ -190,17 +190,22 @@ class HierarchicalOperation(nn.Module):
             alpha_dags=alpha.parameters[level-1],
             primitives=primitives,
             channels_in_x1=channels_in,
-            input_stride=stride
+            input_stride=stride,
+            learnt_op=learnt_op
           )
         else:
           for op_num in ops_to_create:
+            # Skip creation if zero op
+            if op_num == alpha.num_ops_at_level[level]:
+              continue
             base_operations[op_num] = HierarchicalOperation.create_dag(
               level=level-1,
               alpha=alpha,
               alpha_dags=[alpha.parameters[level-1][op_num]],
               primitives=primitives,
               channels_in_x1=channels_in,
-              input_stride=stride
+              input_stride=stride,
+              learnt_op=learnt_op
             )
           
         # Add zero operation
