@@ -89,6 +89,10 @@ class Train:
             primitives=OPS            
         )
 
+        # Port model to gpu if availabile
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
+
         # Weights Optimizer
         w_optim = torch.optim.SGD(
             params=self.model.parameters(),
