@@ -40,10 +40,6 @@ class Train:
     
         # Print config to logs
         pprint(hparams)
-        # Set GPU Device if available and port model
-        if torch.cuda.is_available():
-            torch.cuda.set_device(0) 
-            self.model = self.model.cuda()
         
         # Load best alpha
         self.alpha_normal, self.alpha_reduce = load_best_alpha(config.ALPHA_DIR_PATH)  
