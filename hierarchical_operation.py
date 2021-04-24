@@ -209,6 +209,7 @@ class HierarchicalOperation(nn.Module):
               input_stride=stride,
               learnt_op=learnt_op
             )
+            print(level, base_operations[op_num].channels_out)
           
         # Add zero operation
         for key in ops_to_create:
