@@ -168,21 +168,22 @@ class HierarchicalOperation(nn.Module):
           edge = (node_a, node_b)
           chosen_ops[edge] = int(argmax(alpha_dags[0][edge].cpu().detach()))
         
-        ops_to_create = sorted(chosen_ops.values())
+        ops_to_create = sorted(set(chosen_ops.values()))
       else:
         ops_to_create = range(0, alpha.num_ops_at_level[level])
       base_operations = {}
-
+      
+      # Variable to store number of channels out for Zero Op
+      zero_op_channels_out = None
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
         i = 0
         for key in primitives: 
-          if key == "zero":
-            continue # Created later
           if i in ops_to_create: # Avoid creation of unnecessary ops
             base_operations[i] = primitives[key](C=channels_in, stride=stride, affine=False)
           i += 1
+          zero_op_channels_out = channels_in # For primitive simply preserve # channels
       else: 
         # Recursive case, use create_dag to create the list of operations
         if not learnt_op and level == alpha.num_levels - 1:
@@ -209,13 +210,13 @@ class HierarchicalOperation(nn.Module):
               input_stride=stride,
               learnt_op=learnt_op
             )
-            print(level, base_operations[op_num].channels_out)
-          
-        # Add zero operation
-        for key in ops_to_create:
-          if key in base_operations:
-            zero_channels_out = base_operations[key].channels_out
-        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=zero_channels_out, stride=stride)
+            zero_op_channels_out = base_operations[op_num].channels_out
+
+      # Add zero op if necessary
+      if level is not 0 and alpha.num_ops_at_level[level] in ops_to_create:
+        if zero_op_channels_out is None:
+          zero_op_channels_out = sum((channels_in if x == 0 else channels_in * x) for x in range(alpha.num_nodes_at_level[level-1]-1))
+        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=zero_op_channels_out, stride=stride)
 
       '''
       Determine channels_out
