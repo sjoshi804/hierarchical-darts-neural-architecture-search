@@ -166,8 +166,8 @@ class Train:
         for step, (trn_X, trn_y) in enumerate(train_loader):
             N = trn_X.size(0)
             if torch.cuda.is_available():
-                trn_X = trn_X.cuda()
-                trn_y = trn_y.cuda()
+                trn_X = trn_X.cuda(non_blocking=True)
+                trn_y = trn_y.cuda(non_blocking=True)
 
             # Gradient Step
             w_optim.zero_grad()
@@ -207,7 +207,13 @@ class Train:
 
         with torch.no_grad():
             for step, (X, y) in enumerate(valid_loader):
+                # Batch Size
                 N = X.size(0)
+                
+                # Move tensors to cuda
+                if torch.cuda.is_available():
+                    X = X.cuda(non_blocking=True)
+                    y = y.cuda(non_blocking=True)
 
                 logits = model(X)
                 

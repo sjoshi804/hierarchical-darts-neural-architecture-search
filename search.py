@@ -197,8 +197,8 @@ class HDARTS:
         for step, (trn_X, trn_y) in enumerate(train_loader):
             N = trn_X.size(0)
             if torch.cuda.is_available():
-                trn_X = trn_X.cuda()
-                trn_y = trn_y.cuda()
+                trn_X = trn_X.cuda(non_blocking=True)
+                trn_y = trn_y.cuda(non_blocking=True)
 
             # Weights Step
             w_optim.zero_grad()
@@ -246,8 +246,8 @@ class HDARTS:
         for step, (val_X, val_y) in enumerate(valid_loader):
             N = val_X.size(0)
             if torch.cuda.is_available():
-                val_X = val_X.cuda()
-                val_y = val_y.cuda()
+                val_X = val_X.cuda(non_blocking=True)
+                val_y = val_y.cuda(non_blocking=True)
 
             # Alpha Gradient Steps for each level
             for level in range(len(alpha_optim)):
