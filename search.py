@@ -1,7 +1,7 @@
 # External Imports
-from copy import deepcopy
 from datetime import datetime
 import pprint
+import random
 import signal
 import sys
 import torch
@@ -37,8 +37,9 @@ class HDARTS:
         # Print config to logs
         pprint.pprint(hparams)
 
-        # Commented out for Hoffman Cluster
-        # self.writer.add_hparams(hparams, {'accuracy': 0})
+        # Seed for reproducibility
+        torch.manual_seed(0)
+        random.seed(0)
 
     def run(self):
         # Get Data & MetaData
@@ -256,9 +257,10 @@ class HDARTS:
             for level in range(len(alpha_optim)):
                 model.alpha_training_mode_for_level(level)
                 alpha_optim[level].zero_grad()
-                logits = model(val_X)
-                loss = model.loss_criterion(logits, val_y)
-                loss.backward()
+            logits = model(val_X)
+            loss = model.loss_criterion(logits, val_y)
+            loss.backward()
+            for level in 
                 alpha_optim[level].step()
  
             prec1, prec5 = accuracy(logits, val_y, topk=(1, 5))
