@@ -164,7 +164,7 @@ class HierarchicalOperation(nn.Module):
         
         ops_to_create = sorted(set(chosen_ops.values()))
       else:
-        ops_to_create = range(0, alpha.num_ops_at_level[level])
+        ops_to_create = range(0, alpha.num_ops_at_level[level] + 1)
       base_operations = {}
       
       # Variable to store number of channels out for Zero Op
@@ -215,7 +215,7 @@ class HierarchicalOperation(nn.Module):
         
         # If input node at top level, then do not connect to output node
         # If input node at top level, do not connect to other input node
-        if (level == alpha.num_levels - 1) and(node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
+        if (level == alpha.num_levels - 1) and (node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
           continue 
 
         # Create mixed operation / Select Learnt Operation on outgiong edge
