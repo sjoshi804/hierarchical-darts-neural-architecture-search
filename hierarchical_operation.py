@@ -40,16 +40,6 @@ class HierarchicalOperation(nn.Module):
     self.ops = nn.ModuleDict(ops)
     self.concatenate_output = concatenate_output
 
-    # Determine channels out - simply a sum of the channels in for the last node
-    # We can take this sum by using channels_out property since Mixed operation will have it defined
-    self.channels_out = 0
-    for prev_node in range(0, num_nodes - 1):
-      edge = str((prev_node, num_nodes - 1))
-      if edge in self.ops: # Check if edge exists
-        self.channels_out += self.ops[edge].channels_out
-      else: 
-        continue 
-
   def forward(self, x, x2=None, op_num=0):
     '''
     Iteratively compute using each edge of the dag
@@ -142,7 +132,12 @@ class HierarchicalOperation(nn.Module):
           dag[PREPROC_X] = StdConv(channels_in_x1, channels, 1, 1, 0, affine=False)
         dag[PREPROC_X2] = StdConv(channels_in_x2, channels, 1, 1, 0, affine=False)
 
-
+      '''
+      Determine Channels In
+      '''
+      if channels is None:
+        channels = channels_in_x1
+        
       '''
       Determine base set of operations 
       '''
