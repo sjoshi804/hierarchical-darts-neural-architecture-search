@@ -92,6 +92,9 @@ class Train:
         # Port model to gpu if availabile
         if torch.cuda.is_available():
             self.model = self.model.cuda()
+            # cuDNN optimizations if possible
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.enabled = True
 
         # Weights Optimizer
         w_optim = torch.optim.SGD(
