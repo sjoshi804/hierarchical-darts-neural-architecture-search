@@ -257,10 +257,9 @@ class HDARTS:
             for level in range(len(alpha_optim)):
                 model.alpha_training_mode_for_level(level)
                 alpha_optim[level].zero_grad()
-            logits = model(val_X)
-            loss = model.loss_criterion(logits, val_y)
-            loss.backward()
-            for level in 
+                logits = model(val_X)
+                loss = model.loss_criterion(logits, val_y)
+                loss.backward()
                 alpha_optim[level].step()
  
             prec1, prec5 = accuracy(logits, val_y, topk=(1, 5))
