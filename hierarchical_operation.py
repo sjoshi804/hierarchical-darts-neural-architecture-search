@@ -27,7 +27,7 @@ class HierarchicalOperation(nn.Module):
 
   Analogue of this for pt.darts is https://github.com/khanrc/pt.darts/blob/master/models/search_cells.py
   '''
-  def __init__(self, num_nodes, ops):
+  def __init__(self, num_nodes, ops, concatenate_output=False):
     '''
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.Module] used to initialize the ModuleDict
@@ -38,6 +38,7 @@ class HierarchicalOperation(nn.Module):
     # Initialize member variables
     self.num_nodes = num_nodes
     self.ops = nn.ModuleDict(ops)
+    self.concatenate_output = concatenate_output
 
     # Determine channels out - simply a sum of the channels in for the last node
     # We can take this sum by using channels_out property since Mixed operation will have it defined
@@ -76,7 +77,7 @@ class HierarchicalOperation(nn.Module):
             edge = str((prev_node, node_a))
             if edge in output: # Ensure edge exists
               input.append(output[edge])
-        input = cat(tuple(input), dim=1) 
+        input = sum(input)
 
       for node_b in range(node_a + 1, self.num_nodes):
 
@@ -95,7 +96,13 @@ class HierarchicalOperation(nn.Module):
       start_node = 2
     else:
       start_node = 0
-    return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
+
+    # Concatenate Output only if top level op
+    if self.concatenate_output:
+      return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
+    else:
+      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
+
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):
@@ -112,7 +119,6 @@ class HierarchicalOperation(nn.Module):
     # Initialize variables
     num_nodes = alpha.num_nodes_at_level[level]
     dag = {} # from stringified tuple of edge -> nn.Module (to construct nn.ModuleDict from)
-    nodes_channels_out = []
 
     for node_a in range(0, num_nodes-1):
       
@@ -127,14 +133,6 @@ class HierarchicalOperation(nn.Module):
         stride = 1
 
       '''
-      Determine channels_in
-      '''
-      if node_a == 0:
-        channels_in = channels_in_x1 
-      else:
-        channels_in = sum(nodes_channels_out[:node_a]) 
-
-      '''
       Determine Pre-Processing If Necessary
       '''
       if alpha.num_levels - 1 == level:
@@ -143,9 +141,7 @@ class HierarchicalOperation(nn.Module):
         else:
           dag[PREPROC_X] = StdConv(channels_in_x1, channels, 1, 1, 0, affine=False)
         dag[PREPROC_X2] = StdConv(channels_in_x2, channels, 1, 1, 0, affine=False)
-        # If input node
-        if node_a < 2:
-          channels_in = channels
+
 
       '''
       Determine base set of operations 
@@ -174,16 +170,14 @@ class HierarchicalOperation(nn.Module):
       base_operations = {}
       
       # Variable to store number of channels out for Zero Op
-      zero_op_channels_out = None
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
         i = 0
         for key in primitives: 
           if i in ops_to_create: # Avoid creation of unnecessary ops
-            base_operations[i] = primitives[key](C=channels_in, stride=stride, affine=False)
+            base_operations[i] = primitives[key](C=channels, stride=stride, affine=False)
           i += 1
-          zero_op_channels_out = channels_in # For primitive simply preserve # channels
       else: 
         # Recursive case, use create_dag to create the list of operations
         if not learnt_op and level == alpha.num_levels - 1:
@@ -192,7 +186,7 @@ class HierarchicalOperation(nn.Module):
             alpha=alpha,
             alpha_dags=alpha.parameters[level-1],
             primitives=primitives,
-            channels_in_x1=channels_in,
+            channels_in_x1=channels,
             input_stride=stride,
             learnt_op=learnt_op
           )
@@ -206,23 +200,14 @@ class HierarchicalOperation(nn.Module):
               alpha=alpha,
               alpha_dags=[alpha.parameters[level-1][op_num]],
               primitives=primitives,
-              channels_in_x1=channels_in,
+              channels_in_x1=channels,
               input_stride=stride,
               learnt_op=learnt_op
             )
-            zero_op_channels_out = base_operations[op_num].channels_out
 
       # Add zero op if necessary
       if level is not 0 and alpha.num_ops_at_level[level] in ops_to_create:
-        if zero_op_channels_out is None:
-          zero_op_channels_out = sum((channels_in if x == 0 else channels_in * x) for x in range(alpha.num_nodes_at_level[level-1]-1))
-        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels_in, C_out=zero_op_channels_out, stride=stride)
-
-      '''
-      Determine channels_out
-      '''
-      # Set channels out (identical for all operations in base_operations)
-      nodes_channels_out.append(base_operations[ops_to_create[0]].channels_out)
+        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels, C_out=channels, stride=stride)
 
       '''
       Create mixed operations / Place selected operations on outgoing edges for node_a
@@ -239,6 +224,7 @@ class HierarchicalOperation(nn.Module):
         edge = (node_a, node_b)  
         if not learnt_op:      
           dag[str(edge)] = MixedOperation(base_operations, [alpha_dag[edge] for alpha_dag in alpha_dags]) 
+
           ''' Initialize base operation with shared weights if possible '''
           if shared_weights is not None:
             for op_num in base_operations.keys():
@@ -249,7 +235,7 @@ class HierarchicalOperation(nn.Module):
     '''
     Return HierarchicalOperation created from dag
     '''
-    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
+    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, level==alpha.num_levels - 1)
 
   # Gets state dictionary for top - 1 level ops
   def get_shared_weights(self):
