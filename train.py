@@ -187,12 +187,13 @@ class Train:
             top1.update(prec1.item(), N)
             top5.update(prec5.item(), N)
 
-            print(
-                datetime.now(),
-                "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
-                "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                    epoch+1, epochs, step, len(train_loader)-1, losses=losses,
-                    top1=top1, top5=top5))
+            if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+                print(
+                    datetime.now(),
+                    "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                    "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
+                        epoch+1, epochs, step, len(train_loader)-1, losses=losses,
+                        top1=top1, top5=top5))
  
             self.writer.add_scalar('train/loss', loss.item(), cur_step)
             self.writer.add_scalar('train/top1', prec1.item(), cur_step)
@@ -223,13 +224,14 @@ class Train:
                 losses.update(loss.item(), N)
                 top1.update(prec1.item(), N)
                 top5.update(prec5.item(), N)
- 
-                print(
-                    datetime.now(),
-                    "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
-                    "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                        epoch+1, epochs, step, len(valid_loader)-1, losses=losses,
-                        top1=top1, top5=top5))
+
+                if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+                    print(
+                        datetime.now(),
+                        "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                        "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
+                            epoch+1, epochs, step, len(valid_loader)-1, losses=losses,
+                            top1=top1, top5=top5))
  
         self.writer.add_scalar('val/loss', losses.avg, cur_step)
         self.writer.add_scalar('val/top1', top1.avg, cur_step)
