@@ -27,7 +27,7 @@ class HierarchicalOperation(nn.Module):
 
   Analogue of this for pt.darts is https://github.com/khanrc/pt.darts/blob/master/models/search_cells.py
   '''
-  def __init__(self, num_nodes, ops, concatenate_output=False):
+  def __init__(self, num_nodes, ops, channels_in, concatenate_output=False):
     '''
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.Module] used to initialize the ModuleDict
@@ -39,6 +39,9 @@ class HierarchicalOperation(nn.Module):
     self.num_nodes = num_nodes
     self.ops = nn.ModuleDict(ops)
     self.concatenate_output = concatenate_output
+
+    # Channels Out
+    self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
 
   def forward(self, x, x2=None, op_num=0):
     '''
@@ -230,7 +233,7 @@ class HierarchicalOperation(nn.Module):
     '''
     Return HierarchicalOperation created from dag
     '''
-    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, level==alpha.num_levels - 1)
+    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1)
 
   # Gets state dictionary for top - 1 level ops
   def get_shared_weights(self):

@@ -24,10 +24,6 @@ class MixedOperation(nn.Module):
     # Module List
     self.ops = nn.ModuleList([operations[key] for key in sorted(operations.keys())])
 
-    # Channels out = channels out of any operation in self._ops as all are same, 
-    # recursively will have channels_out defined or primitive will have channels_out defined
-    self.channels_out = self.ops[0].channels_out
-
   def forward(self, x, op_num=0):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters

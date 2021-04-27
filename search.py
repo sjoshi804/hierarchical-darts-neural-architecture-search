@@ -98,6 +98,9 @@ class HDARTS:
         # Transfer model to GPU
         if torch.cuda.is_available():
             self.model = self.model.cuda()
+            # Optimize if possible
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.enabled = True
  
         # Weights Optimizer
         w_optim = torch.optim.SGD(
