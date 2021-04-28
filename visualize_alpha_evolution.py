@@ -23,7 +23,6 @@ alpha_reduce_history = deepcopy(alpha_normal_history)
 
 for epoch in range(num_epochs):
     alpha_normal, alpha_reduce = load_alpha(alpha_dir_path=alpha_dir_path, epoch=epoch)
-    print(epoch)
     update_alpha_history(alpha_history=alpha_normal_history, alpha=alpha_normal)
     update_alpha_history(alpha_history=alpha_reduce_history, alpha=alpha_reduce)
 
