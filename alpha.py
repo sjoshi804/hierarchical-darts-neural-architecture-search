@@ -68,8 +68,6 @@ class Alpha:
                             extra_ops = 0
                         else:
                             extra_ops = 1
-                        
-
 
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter
