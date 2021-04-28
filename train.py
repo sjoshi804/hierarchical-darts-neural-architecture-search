@@ -11,7 +11,7 @@ import torch.nn as nn
 # Internal Imports
 from config import TrainConfig
 from learnt_model import LearntModel
-from util import AverageMeter, accuracy, get_data, load_best_alpha, print_alpha
+from util import AverageMeter, accuracy, get_data, load_alpha, print_alpha
 from operations import OPS
 
 # Get Config
@@ -42,7 +42,7 @@ class Train:
         pprint(hparams)
         
         # Load best alpha
-        self.alpha_normal, self.alpha_reduce = load_best_alpha(config.ALPHA_DIR_PATH)  
+        self.alpha_normal, self.alpha_reduce = load_alpha(config.ALPHA_DIR_PATH)  
 
     def run(self):
         # Get Data & MetaData

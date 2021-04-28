@@ -3,7 +3,7 @@ get_data, Average_Meter: Borrowed from https://github.com/khanrc/pt.darts
 '''
 
 # External Imports
-from alpha import Alpha
+import csv
 from functools import wraps
 from model_controller import ModelController
 from time import time
@@ -19,6 +19,7 @@ import torchvision.datasets as dset
 
 
 # Internal Imports
+from alpha import Alpha
 import preProcess
 
 
@@ -88,6 +89,42 @@ def print_alpha(alpha: Alpha):
             print("")
         print("\n")
 
+def create_alpha_history_object(alpha):
+    # Initialize alpha_i for all i < num_levels
+    alpha_history = {}
+    for i in range(0, alpha.num_levels):
+        alpha_i = [ {}  for y in range(0, alpha.num_ops_at_level[i+1])]
+        for dict in alpha_i:
+            for node_a in range(0, alpha.num_nodes_at_level[i]):
+                for node_b in range(node_a + 1, alpha.num_nodes_at_level[i]):
+                    # Skip creation of alpha if top level and edges don't exist
+                    if (i == alpha.num_levels - 1) and(node_a < 2) and ((node_b == 1) or (node_b == alpha.num_nodes_at_level[i] - 1)):
+                        continue
+
+                    # Initialize a list to track the chosen operation at each stage
+                    dict[(node_a, node_b)] = []
+        # Add level to history object
+        alpha_history[i] = alpha_i
+    return alpha_history
+
+def update_alpha_history(alpha_history, alpha):
+    for level in alpha.parameters:
+        for op_num in range(0, len(alpha.parameters[level])):
+            for edge in alpha.parameters[level][op_num]:
+                chosen_op = int(np.argmax(alpha.parameters[level][op_num][edge].cpu().detach())), alpha.parameters[level][op_num][edge]
+                alpha_history[level][op_num][edge].append(chosen_op)
+    return alpha_history
+
+def write_alpha_history_to_csvs(alpha_history, alpha, type: str):
+    for level in alpha.parameters:
+        for op_num in range(0, len(alpha.parameters[level])):
+            for edge in alpha.parameters[level][op_num]:
+                with open(type + "-level-" + str(level) + "-op-" + str(op_num) + "-edge-" + str(edge) + ".csv", mode='w+') as csv_file:
+                    csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    for epoch, chosen_op in enumerate(alpha_history[level][op_num][edge]):
+                        csv_writer.writerow([epoch, chosen_op])
+    return 
+
 def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
 
     # Write to temp file for easy parsing
@@ -149,9 +186,11 @@ def load_object(filename):
         obj = pickle.load(input)
         return obj
 
-def load_best_alpha(alpha_dir_path):
-    alpha_normal = load_object(os.path.join(alpha_dir_path, "best","alpha_normal.pkl"))
-    alpha_reduce = load_object(os.path.join(alpha_dir_path, "best", "alpha_reduce.pkl"))
+def load_alpha(alpha_dir_path, epoch=None):
+    if epoch == None:
+        epoch = "best"
+    alpha_normal = load_object(os.path.join(alpha_dir_path, epoch, "alpha_normal.pkl"))
+    alpha_reduce = load_object(os.path.join(alpha_dir_path, epoch, "alpha_reduce.pkl"))
     return alpha_normal, alpha_reduce
 
 def load_checkpoint(checkpoint_root_dir, epoch=-1):
