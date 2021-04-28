@@ -122,7 +122,7 @@ class HDARTS:
         for level in range(0, num_levels):
             alpha_optim.append(torch.optim.Adam(
                     params=self.model.get_alpha_level(level),
-                    lr=config.ALPHA_LR,
+                    lr=config.ALPHA_LR[level],
                     weight_decay=config.ALPHA_WEIGHT_DECAY,
                     betas=config.ALPHA_MOMENTUM))
 

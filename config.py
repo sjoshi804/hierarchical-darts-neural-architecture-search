@@ -100,7 +100,7 @@ class SearchConfig(BaseConfig):
       help='string dictionary detailing number of operations at each level i.e.  "{0: 8, 1: 2 }"'),
 
 
-    parser.add_argument('--alpha_lr', type=float, default=ALPHA_LR, help='lr for weights')
+    parser.add_argument('--alpha_lr', type=eval, default=[ALPHA_LR,ALPHA_LR], help='list of lr for alpha')
     parser.add_argument('--alpha_weight_decay', type=float, default=ALPHA_WEIGHT_DECAY, help='weight decay for alpha architecture')
     parser.add_argument('--alpha_momentum', type=eval, default=ALPHA_MOMENTUM, help='betas (momentum) for alpha architecture adam optimizer')
 
