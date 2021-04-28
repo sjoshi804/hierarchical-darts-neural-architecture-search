@@ -4,6 +4,7 @@ get_data, Average_Meter: Borrowed from https://github.com/khanrc/pt.darts
 
 # External Imports
 import csv
+import io
 from functools import wraps
 from model_controller import ModelController
 from time import time
@@ -180,11 +181,14 @@ def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_
         shutil.copyfile(alpha_normal_file_path, os.path.join(best_checkpoint_dir, "alpha_normal.pkl"))
         shutil.copyfile(alpha_reduce_file_path, os.path.join(best_checkpoint_dir, "alpha_reduce.pkl"))
         # shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
+
 # Function to load object from file
 def load_object(filename):
     with open(filename, 'rb') as input:
-        obj = pickle.load(input)
-        return obj
+        if torch.cuda.is_available():
+            return pickle.load(input)
+        else:
+            return CPU_Unpickler(input).load()
 
 def load_alpha(alpha_dir_path, epoch=None):
     if epoch == None:
@@ -299,3 +303,8 @@ def det_cell_size(num_darts_nodes: int):
     for i in range(3):
         print("Level 0", sorted_keys[i][0], "Level 1", sorted_keys[i][1], "Num Ops", num_ops[sorted_keys[i]])
     return sorted_keys
+class CPU_Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else: return super().find_class(module, name)
