@@ -112,18 +112,24 @@ def update_alpha_history(alpha_history, alpha):
     for level in alpha.parameters:
         for op_num in range(0, len(alpha.parameters[level])):
             for edge in alpha.parameters[level][op_num]:
-                chosen_op = int(np.argmax(alpha.parameters[level][op_num][edge].cpu().detach())), alpha.parameters[level][op_num][edge]
+                chosen_op = int(np.argmax(alpha.parameters[level][op_num][edge].cpu().detach()))
                 alpha_history[level][op_num][edge].append(chosen_op)
     return alpha_history
 
-def write_alpha_history_to_csvs(alpha_history, alpha, type: str):
+def write_alpha_history_to_csvs(alpha_history, alpha, alpha_type, write_dir):
+    # Creates checkpoint directory if it doesn't exist                                                            
+    if not os.path.exists(write_dir):
+        os.makedirs(write_dir)
+    curr_dir = os.getcwd()
+    os.chdir(write_dir)
     for level in alpha.parameters:
         for op_num in range(0, len(alpha.parameters[level])):
             for edge in alpha.parameters[level][op_num]:
-                with open(type + "-level-" + str(level) + "-op-" + str(op_num) + "-edge-" + str(edge) + ".csv", mode='w+') as csv_file:
+                with open(alpha_type + "-level-" + str(level) + "-op-" + str(op_num) + "-edge-" + str(edge) + ".csv", mode='w+') as csv_file:
                     csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     for epoch, chosen_op in enumerate(alpha_history[level][op_num][edge]):
                         csv_writer.writerow([epoch, chosen_op])
+    os.chdir(curr_dir)
     return 
 
 def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoch=None):
@@ -191,10 +197,10 @@ def load_object(filename):
             return CPU_Unpickler(input).load()
 
 def load_alpha(alpha_dir_path, epoch=None):
-    if epoch == None:
+    if epoch is None:
         epoch = "best"
-    alpha_normal = load_object(os.path.join(alpha_dir_path, epoch, "alpha_normal.pkl"))
-    alpha_reduce = load_object(os.path.join(alpha_dir_path, epoch, "alpha_reduce.pkl"))
+    alpha_normal = load_object(os.path.join(alpha_dir_path, str(epoch), "alpha_normal.pkl"))
+    alpha_reduce = load_object(os.path.join(alpha_dir_path, str(epoch), "alpha_reduce.pkl"))
     return alpha_normal, alpha_reduce
 
 def load_checkpoint(checkpoint_root_dir, epoch=-1):
