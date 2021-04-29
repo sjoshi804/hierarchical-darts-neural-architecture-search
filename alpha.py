@@ -64,10 +64,8 @@ class Alpha:
                         # Determine num of extra ops
                         if i == 0:
                             extra_ops = 2
-                        elif num_nodes_at_level[0] == 2: # Trying to simulate DARTS
-                            extra_ops = 0
                         else:
-                            extra_ops = 1
+                            extra_ops = 0
 
                         # Initializing the alpha for an edge
                         # Each value in this list is a parameter

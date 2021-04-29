@@ -164,7 +164,7 @@ class HierarchicalOperation(nn.Module):
         
         ops_to_create = sorted(set(chosen_ops.values()))
       else:
-        ops_to_create = range(0, alpha.num_ops_at_level[level] + 1)
+        ops_to_create = range(0, alpha.num_ops_at_level[level])
       base_operations = {}
       
       # Variable to store number of channels out for Zero Op
@@ -191,8 +191,6 @@ class HierarchicalOperation(nn.Module):
         else:
           for op_num in ops_to_create:
             # Skip creation if zero op
-            if op_num == alpha.num_ops_at_level[level]:
-              continue
             base_operations[op_num] = HierarchicalOperation.create_dag(
               level=level-1,
               alpha=alpha,
@@ -202,11 +200,7 @@ class HierarchicalOperation(nn.Module):
               input_stride=stride,
               learnt_op=learnt_op
             )
-
-      # Add zero op if necessary
-      if level is not 0 and alpha.num_ops_at_level[level] in ops_to_create:
-        base_operations[alpha.num_ops_at_level[level]] = Zero(C_in=channels, C_out=channels, stride=stride)
-
+      
       '''
       Create mixed operations / Place selected operations on outgoing edges for node_a
       '''

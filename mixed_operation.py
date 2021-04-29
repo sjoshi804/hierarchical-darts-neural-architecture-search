@@ -28,19 +28,8 @@ class MixedOperation(nn.Module):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    if len(self.ops) == 2:
-      # Get operation that is not zero
-      for base_operation in self.ops:
-        if not isinstance(base_operation, Zero):
-          op = base_operation
-        else:
-          zero_op = base_operation
-      softmaxed_weights = F.softmax(self.alpha_e[0], dim=-1)
-
-      # Need to handle zero operation specially here
-      output = [w * op.forward(x, op_num=op_num) for w, op_num in zip(softmaxed_weights[:-1], range(len(self.alpha_e[0]) - 1))]
-      output.append(softmaxed_weights[-1] * zero_op(x))
-      return sum(output)
+    if len(self.ops) == 1:
+      return sum([w * self.ops[0].forward(x, op_num=op_num) for op_num, w in enumerate(F.softmax(self.alpha_e[0], dim=-1))])
     else:
       return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e[op_num], dim=-1), self.ops))
 
