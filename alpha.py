@@ -63,7 +63,7 @@ class Alpha:
 
                         # Determine num of extra ops
                         if i == 0:
-                            extra_ops = 2
+                            extra_ops = 1
                         else:
                             extra_ops = 0
 
