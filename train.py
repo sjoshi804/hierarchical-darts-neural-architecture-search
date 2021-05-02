@@ -46,7 +46,7 @@ class Train:
 
     def run(self):
         # Get Data & MetaData
-        input_size, input_channels, num_classes, train_data = get_data(
+        input_size, input_channels, num_classes, train_data, valid_data = get_data(
             dataset_name=config.DATASET,
             data_path=config.DATAPATH,
             cutout_length=16,
@@ -54,25 +54,19 @@ class Train:
 
         # Train / Validation Split
         n_train = len(train_data)
+        n_valid = len(valid_data)
         if config.PERCENTAGE_OF_DATA < 100:
-            split = 50000
-        else:
-            split = (500 * config.PERCENTAGE_OF_DATA)
-        indices = list(range(n_train))
-        train_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
-        if config.PERCENTAGE_OF_DATA < 100:
-            valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[50000: 50000 + (100*config.PERCENTAGE_OF_DATA)])
-        else:
-            valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
-
+            n_train = (n_train // 100) * config.PERCENTAGE_OF_DATA
+            n_valid = (n_valid // 100) * config.PERCENTAGE_OF_DATA
+            train_data = train_data[:n_train]
+            valid_data = valid_data[:n_valid]
+        
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
-                                                sampler=train_sampler,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
         valid_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
-                                                sampler=valid_sampler,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
         
