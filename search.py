@@ -46,7 +46,7 @@ class HDARTS:
         input_size, input_channels, num_classes, train_data = get_data(
             dataset_name=config.DATASET,
             data_path=config.DATAPATH,
-            cutout_length=0,
+            cutout_length=16,
             validation=False)
  
         # Set Loss Criterion
