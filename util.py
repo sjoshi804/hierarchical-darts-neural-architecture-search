@@ -16,6 +16,7 @@ import shutil
 import sys
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torch.autograd import Variable
 import torchvision.datasets as dset
 
 
@@ -314,3 +315,11 @@ class CPU_Unpickler(pickle.Unpickler):
         if module == 'torch.storage' and name == '_load_from_bytes':
             return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
         else: return super().find_class(module, name)
+
+def drop_path(x, drop_prob):
+  if drop_prob > 0.:
+    keep_prob = 1.-drop_prob
+    mask = Variable(torch.cuda.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob))
+    x.div_(keep_prob)
+    x.mul_(mask)
+  return x
