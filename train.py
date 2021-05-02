@@ -90,7 +90,8 @@ class Train:
             channels_start=config.CHANNELS_START,
             stem_multiplier=config.STEM_MULTIPLIER,
             num_classes=num_classes,
-            primitives=OPS            
+            primitives=OPS,
+            auxiliary=True            
         )
 
         # Port model to gpu if availabile
@@ -115,10 +116,11 @@ class Train:
         signal.signal(signal.SIGINT, self.terminate)
 
         # Number of parameters
-        print("# of Parameters", sum(p.numel() for p in self.model.parameters() if p.requires_grad))
+        print("# of Parameters", sum(param.numel() for name, param in self.model.named_parameters() if param.requires_grad and "auxiliary" not in name))
 
         # Training Loop
         best_top1 = 0.
+        loss_criterion = nn.CrossEntropyLoss()
         for epoch in range(config.EPOCHS):
             lr = lr_scheduler.get_lr()[0]
 
@@ -130,7 +132,8 @@ class Train:
                 epoch=epoch,
                 lr=lr,
                 gradient_clip=config.WEIGHTS_GRADIENT_CLIP,
-                epochs=config.EPOCHS)
+                epochs=config.EPOCHS,
+                loss_criterion=loss_criterion)
             
             # Learning Rate Step
             lr_scheduler.step()
@@ -164,7 +167,7 @@ class Train:
 
         self.terminate()
     
-    def train(self, train_loader, model, w_optim, epoch, lr, gradient_clip, epochs):
+    def train(self, train_loader, model, w_optim, epoch, lr, gradient_clip, epochs, loss_criterion):
         
         # Track average top1, top5, loss
         top1 = AverageMeter()
@@ -187,8 +190,10 @@ class Train:
 
             # Gradient Step
             w_optim.zero_grad()
-            logits = model(trn_X)
-            loss = nn.CrossEntropyLoss()(logits, trn_y) # Only supports cross entropy loss rn
+            logits,logits_aux = model(trn_X)
+            
+            loss = loss_criterion(logits, trn_y) # Only supports cross entropy loss rn
+            loss += loss_criterion(logits_aux, trn_y) * 0.4 # Make this adjustable
             loss.backward()
 
             # gradient clipping

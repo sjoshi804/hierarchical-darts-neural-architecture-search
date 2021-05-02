@@ -4,14 +4,18 @@ import torch.nn as nn
 
 # Internal Imports
 from alpha import Alpha
+from auxiliary_head_cifar import AuxiliaryHeadCIFAR
 from hierarchical_operation import HierarchicalOperation
 
 
 class LearntModel(nn.Module):
-    def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, num_cells: int, channels_in: int, channels_start: int, stem_multiplier: int, num_classes: int, primitives):
+    def __init__(self, alpha_normal: Alpha, alpha_reduce: Alpha, num_cells: int, channels_in: int, channels_start: int, stem_multiplier: int, num_classes: int, primitives, auxiliary=True):
         
         # Superclass constructor
         super().__init__()
+
+        # Member Variables
+        self.auxiliary = auxiliary
 
         '''
         PreProcessing Layer
@@ -32,7 +36,7 @@ class LearntModel(nn.Module):
         self.main_net = nn.ModuleList()
 
         # At 1/3 and 2/3 num_cells, reduction cells are inserted
-        reduction_cell_indices = [num_cells//3, (num_cells//3)*2]
+        self.reduction_cell_indices = [num_cells//3, (num_cells//3)*2]
 
         # Initialize channels
         curr_channels = channels_start 
@@ -49,7 +53,7 @@ class LearntModel(nn.Module):
             else:
                 prev_channels = self.main_net[i - 1].channels_out
             
-            if i in reduction_cell_indices:
+            if i in self.reduction_cell_indices:
                 # Reduction Cell - halve feature map, double # features
                 curr_channels *= 2
                 self.main_net.append(HierarchicalOperation.create_dag(
@@ -61,7 +65,7 @@ class LearntModel(nn.Module):
                 channels_in_x2=prev_channels,
                 channels=curr_channels,
                 is_reduction=True,
-                prev_reduction=(i-1 in reduction_cell_indices),
+                prev_reduction=(i-1 in self.reduction_cell_indices),
                 learnt_op=True
                 ))
             else:
@@ -75,12 +79,17 @@ class LearntModel(nn.Module):
                 channels_in_x2=prev_channels,
                 channels=curr_channels,
                 is_reduction=False,
-                prev_reduction=(i-1 in reduction_cell_indices),
+                prev_reduction=(i-1 in self.reduction_cell_indices),
                 learnt_op=True
                 ))
             print("Channels In / Out for Cells")
             print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
 
+        '''
+        Auxiliary Head (CIFAR)
+        ''' 
+        if self.auxiliary:
+            self.auxiliary_head = AuxiliaryHeadCIFAR(self.main_net[self.reduction_cell_indices[-1]].channels_out, 10)
         '''
         Post-processing Layers
         '''
@@ -133,4 +142,11 @@ class LearntModel(nn.Module):
         # Classifier
         logits = self.classifer(y)
 
-        return logits
+        '''
+        Auxiliary Head
+        '''
+        if self.auxiliary and self.training:
+            logits_aux = self.auxiliary_head.forward(output[self.reduction_cell_indices[-1]])
+            return logits, logits_aux 
+        else: 
+            return logits
