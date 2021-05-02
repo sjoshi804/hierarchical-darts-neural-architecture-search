@@ -64,6 +64,7 @@ class Train:
             valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[50000: 50000 + (100*config.PERCENTAGE_OF_DATA)])
         else:
             valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[split:])
+
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 sampler=train_sampler,
@@ -113,6 +114,9 @@ class Train:
         # Register Signal Handler for interrupts & kills
         signal.signal(signal.SIGINT, self.terminate)
 
+        # Number of parameters
+        print("# of Parameters", sum(p.numel() for p in self.model.parameters() if p.requires_grad))
+
         # Training Loop
         best_top1 = 0.
         for epoch in range(config.EPOCHS):
@@ -148,6 +152,12 @@ class Train:
             if best_top1 < top1:
                 best_top1 = top1
                 torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + "best.pt")
+            # GPU Memory Allocated for Model in Weight Sharing Phase   
+            if epoch == 0:
+                try:
+                    print("Learnt Architecture Training: Max GPU Memory Used",torch.cuda.max_memory_allocated()/(1024*1024*1024), "GB")
+                except: 
+                    print("Unable to retrieve memory data")
  
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
@@ -190,7 +200,7 @@ class Train:
             top1.update(prec1.item(), N)
             top5.update(prec5.item(), N)
 
-            if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+            if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(train_loader)-1:
                 print(
                     datetime.now(),
                     "Train: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
@@ -211,7 +221,6 @@ class Train:
         losses = AverageMeter()
 
         model.eval()
-
         with torch.no_grad():
             for step, (X, y) in enumerate(valid_loader):
                 # Batch Size
