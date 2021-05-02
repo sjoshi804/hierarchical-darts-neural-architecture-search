@@ -148,7 +148,7 @@ class Train:
             # Creates checkpoint directory if it doesn't exist
             if not os.path.exists(config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string):
                 os.makedirs(config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string)
-            torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + str(epoch) + ".pt")
+            # torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + str(epoch) + ".pt")
             if best_top1 < top1:
                 best_top1 = top1
                 torch.save(self.model, config.CHECKPOINT_PATH + "/" + config.DATASET + "/" + self.dt_string + "/" + "best.pt")
