@@ -1,4 +1,5 @@
 # External Imports
+from util import drop_path
 from numpy import argmax
 from torch import cat  
 import torch.nn as nn 
@@ -11,6 +12,9 @@ from operations import FactorizedReduce, MANDATORY_OPS, StdConv, Zero
 # String Constants
 PREPROC_X = "preproc_x"
 PREPROC_X2 = "preproc_x2"
+
+# DROP PROB
+DROP_PROB=0.2
 
 '''
 Channels / Features are managed in the following way: 
@@ -27,7 +31,7 @@ class HierarchicalOperation(nn.Module):
 
   Analogue of this for pt.darts is https://github.com/khanrc/pt.darts/blob/master/models/search_cells.py
   '''
-  def __init__(self, num_nodes, ops, channels_in, concatenate_output=False):
+  def __init__(self, num_nodes, ops, channels_in, concatenate_output=False, learnt_op=False):
     '''
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.Module] used to initialize the ModuleDict
@@ -39,6 +43,7 @@ class HierarchicalOperation(nn.Module):
     self.num_nodes = num_nodes
     self.ops = nn.ModuleDict(ops)
     self.concatenate_output = concatenate_output
+    self.learnt_op = learnt_op
 
     # Channels Out
     self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
@@ -82,7 +87,8 @@ class HierarchicalOperation(nn.Module):
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
-          output[edge] = self.ops[edge].forward(input)
+          if self.learnt_op:
+            output[edge] = drop_path(self.ops[edge].forward(input), DROP_PROB)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     if type(x2) != type(None): # if top level skip input nodes
@@ -226,7 +232,7 @@ class HierarchicalOperation(nn.Module):
     '''
     Return HierarchicalOperation created from dag
     '''
-    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1)
+    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1, learnt_op=learnt_op)
 
   # Gets state dictionary for top - 1 level ops
   def get_shared_weights(self):
