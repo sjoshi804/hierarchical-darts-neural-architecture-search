@@ -6,7 +6,6 @@ get_data, Average_Meter: Borrowed from https://github.com/khanrc/pt.darts
 import csv
 import io
 from functools import wraps
-from model_controller import ModelController
 from time import time
 import math
 import numpy as np
@@ -154,7 +153,7 @@ def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoc
     with open('final_alpha.txt', 'r') as f:
         writer.add_text("Alpha at epoch: " + str(epoch), f.read())
 
-def save_checkpoint(model: ModelController, epoch: int, checkpoint_root_dir, is_best=False):
+def save_checkpoint(model, epoch: int, checkpoint_root_dir, is_best=False):
     '''
     Saves alpha to be able to learn the model from here if everything crashes.
     '''
