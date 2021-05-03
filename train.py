@@ -112,6 +112,9 @@ class Train:
         # Number of parameters
         print("# of Parameters", sum(param.numel() for name, param in self.model.named_parameters() if param.requires_grad and "auxiliary" not in name))
 
+        # Debugging 
+        torch.autograd.set_detect_anomaly(True)
+
         # Training Loop
         best_top1 = 0.
         loss_criterion = nn.CrossEntropyLoss()
@@ -187,7 +190,7 @@ class Train:
             logits,logits_aux = model(trn_X)
             
             loss = loss_criterion(logits, trn_y) # Only supports cross entropy loss rn
-            loss += loss_criterion(logits_aux, trn_y) * 0.4 # Make this adjustable
+            loss = loss + loss_criterion(logits_aux, trn_y) * 0.4 # Make this adjustable
             loss.backward()
 
             # gradient clipping
