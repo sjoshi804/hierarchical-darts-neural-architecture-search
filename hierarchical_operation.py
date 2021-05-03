@@ -7,7 +7,7 @@ import torch.nn as nn
 # Internal Imports
 from alpha import Alpha
 from mixed_operation import MixedOperation
-from operations import FactorizedReduce, MANDATORY_OPS, StdConv, Zero
+from operations import FactorizedReduce, Identity, MANDATORY_OPS, StdConv, Zero
 
 # String Constants
 PREPROC_X = "preproc_x"
@@ -87,7 +87,7 @@ class HierarchicalOperation(nn.Module):
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
-          if self.learnt_op:
+          if self.learnt_op and not isinstance(self.ops[edge], Identity): 
             output[edge] = drop_path(self.ops[edge].forward(input), DROP_PROB)
     
     # By extension, final output will be the concatenation of all inputs to the final node
