@@ -87,8 +87,11 @@ class HierarchicalOperation(nn.Module):
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
-          if self.learnt_op and not isinstance(self.ops[edge], Identity): 
+          # If not at top level maybe drop path, else don't
+          if self.learnt_op and (type(x2) == type(None)) and not isinstance(self.ops[edge], Identity): 
             output[edge] = drop_path(self.ops[edge].forward(input), DROP_PROB)
+          else:
+            output[edge] = self.ops[edge].forward(input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
     if type(x2) != type(None): # if top level skip input nodes
