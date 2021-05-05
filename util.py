@@ -318,6 +318,9 @@ class CPU_Unpickler(pickle.Unpickler):
 def drop_path(x, drop_prob):
   if drop_prob > 0.:
     keep_prob = 1.-drop_prob
-    mask = torch.cuda.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
+    if torch.cuda.is_available():
+        mask = torch.cuda.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
+    else:
+        mask = torch.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
     x.div_(keep_prob).mul_(mask)
   return x
