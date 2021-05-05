@@ -15,3 +15,5 @@ mnist_learnt_models
 cifar10_learnt_models
 *job.sh
 alpha_history
+*.pt
+*.jpg
