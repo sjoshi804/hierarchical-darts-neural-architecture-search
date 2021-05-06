@@ -9,7 +9,10 @@ runs
 test
 **/.DS_STORE
 vae_runs
-logs
+logs*
 mnist_learnt_models
 cifar10_learnt_models
 submit_job.sh
+alpha_history
+*.pt
+*.jpg
