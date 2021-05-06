@@ -38,7 +38,10 @@ class HierarchicalOperation(nn.Module):
 
     # Determine channels out - simply a sum of the channels in for the last node
     # We can take this sum by using channels_out property since Mixed operation will have it defined
-    self.channels_out = self.ops[str((0,1))].channels_out * (self.num_nodes - 1)
+    if self.is_top_level:
+      self.channels_out = self.ops[str((0,1))].channels_out * (self.num_nodes - 1)
+    else:
+      self.channels_out = self.ops[str((0,1))].channels_out
 
   def forward(self, x):
     '''
