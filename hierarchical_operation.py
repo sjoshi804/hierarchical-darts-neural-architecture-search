@@ -23,7 +23,7 @@ class HierarchicalOperation(nn.Module):
 
   Analogue of this for pt.darts is https://github.com/khanrc/pt.darts/blob/master/models/search_cells.py
   '''
-  def __init__(self, num_nodes, ops):
+  def __init__(self, num_nodes, ops, is_top_level=False):
     '''
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.module] used to initialize the ModuleDict
@@ -34,10 +34,11 @@ class HierarchicalOperation(nn.Module):
     # Initialize member variables
     self.num_nodes = num_nodes
     self.ops = nn.ModuleDict(ops)
+    self.is_top_level = is_top_level
 
     # Determine channels out - simply a sum of the channels in for the last node
     # We can take this sum by using channels_out property since Mixed operation will have it defined
-    self.channels_out = sum(self.ops[str((prev_node, num_nodes - 1))].channels_out for prev_node in range(0, num_nodes - 1))
+    self.channels_out = self.ops[str((0,1))].channels_out * (self.num_nodes - 1)
 
   def forward(self, x):
     '''
@@ -62,13 +63,15 @@ class HierarchicalOperation(nn.Module):
           for prev_node in range(0, node_a):
             input.append(output[(prev_node, node_a)])
 
-          input = cat(tuple(input), dim=1) 
+          input = sum(input)
 
         output[edge] = self.ops[str(edge)](input)
     
     # By extension, final output will be the concatenation of all inputs to the final node
-    # TODO: Perhaps we want to add some dropout / reduction here to avoid blowing up the number of features
-    return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
+    if self.is_top_level:
+      return cat(tuple([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)]), dim=1)
+    else:
+      return sum([output[(prev_node, self.num_nodes - 1)] for prev_node in range(0, self.num_nodes - 1)])
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dag: dict, primitives: dict, channels_in: int):
@@ -82,17 +85,8 @@ class HierarchicalOperation(nn.Module):
     # Initialize variables
     num_nodes = alpha.num_nodes_at_level[level]
     dag = {} # from stringified tuple of edge -> nn.module (to construct nn.ModuleDict from)
-    nodes_channels_out = []
 
     for node_a in range(0, num_nodes):
-
-      '''
-      Determine channels_in
-      '''
-      # If not the first node then channels_in must be computed by sum of channels of input edges
-      if (node_a != 0):
-        channels_in = sum(nodes_channels_out[:node_a]) 
-
       '''
       Determine base set of operations
       '''
@@ -102,10 +96,8 @@ class HierarchicalOperation(nn.Module):
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
-        print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
         for key in primitives: 
           base_operations.append(primitives[key](C=channels_in, stride=1, affine=False))
-          print(f'Memory allocated after tensor load to cpu: {torch.cuda.memory_allocated() / 10 ** 6} MB')
 
       else: 
         # Recursive case, use create_dag to create the list of operations
@@ -122,12 +114,6 @@ class HierarchicalOperation(nn.Module):
         base_operations.append(Zero(C_in=channels_in, C_out=base_operations[0].channels_out, stride=1))
 
       '''
-      Determine channels_out
-      '''
-      # Set channels out (identical for all operations in base_operations)
-      nodes_channels_out.append(base_operations[0].channels_out)
-
-      '''
       Create mixed operations on outgoing edges for node_a
       '''
       # Loop through all node_b > node_a to create mixed operation on every outgoing edge from node_a 
@@ -140,4 +126,4 @@ class HierarchicalOperation(nn.Module):
     '''
     Return HierarchicalOperation created from dag'
     '''
-    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag)
+    return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, is_top_level=(alpha.num_levels-1==level))
