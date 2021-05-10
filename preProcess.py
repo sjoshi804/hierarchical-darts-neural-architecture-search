@@ -62,6 +62,9 @@ def data_transforms(dataset, cutout_length):
 
     return train_transform, valid_transform
 
+'''
+Borrowowed from Quark0/DARTS
+'''
 def _data_transforms_cifar10():
   CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
   CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
