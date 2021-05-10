@@ -32,7 +32,9 @@ class Cutout(object):
 def data_transforms(dataset, cutout_length):
 
     dataset = dataset.lower()
-    if dataset in ('mnist', 'cifar10'):
+    if dataset == 'cifar10':
+        return _data_transforms_cifar10()
+    elif dataset == 'mnist':
         # Initialized to avoid expensive recomputation
         MEAN = [0.13066051707548254]
         STD = [0.30810780244715075]
@@ -59,3 +61,22 @@ def data_transforms(dataset, cutout_length):
         train_transform.transforms.append(Cutout(cutout_length))
 
     return train_transform, valid_transform
+
+def _data_transforms_cifar10():
+  CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
+  CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+
+  train_transform = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+  ])
+  
+  train_transform.transforms.append(Cutout(16))
+
+  valid_transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+    ])
+  return train_transform, valid_transform
