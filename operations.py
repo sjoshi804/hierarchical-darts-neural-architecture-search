@@ -34,7 +34,7 @@ LEN_SIMPLE_OPS = len(SIMPLE_OPS)
 
 MANDATORY_OPS = {
   "identity": lambda C, stride, affine: Identity(C, stride),
-  #"zero": lambda C, stride, affine: Zero(C, C, stride)
+  "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
 # TODO: Try replacing the larger convolutions with stacking of the smaller ones instead
