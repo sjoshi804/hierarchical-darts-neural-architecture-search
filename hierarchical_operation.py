@@ -169,7 +169,12 @@ class HierarchicalOperation(nn.Module):
 
           # Determine Operation to Choose
           edge = (node_a, node_b)
-          chosen_ops[edge] = int(argmax(alpha_dags[0][edge].cpu().detach()))
+          # If primitive level, then last op is zero - do not include
+          if level == 0:
+            alpha_candidates = alpha_dags[0][edge].cpu().detach()[:-1]
+          else:
+            alpha_candidates = alpha_dags[0][edge].cpu().detach()
+          chosen_ops[edge] = int(argmax(alpha_candidates))
         
         ops_to_create = sorted(set(chosen_ops.values()))
       else:
