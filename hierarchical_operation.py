@@ -235,9 +235,12 @@ class HierarchicalOperation(nn.Module):
             for op_num in base_operations.keys():
               base_operations[op_num].load_state_dict(shared_weights[str(edge)])
         else:
-          dag[str(edge)] = base_operations[chosen_ops[edge]]
-
-    '''
+          if alpha.num_levels != 1:
+            dag[str(edge)] = base_operations[chosen_ops[edge]]
+          else: # DARTS SIM - TOP K SPARSIFICATION
+            if alpha_dags[0][edge].cpu().detach()[:-1] in sorted([max(alpha_dags[0][(node_a, node_b2)].cpu().detach()[:-1]) for node_b2 in range(node_a + 1, num_nodes)])[-2:]:
+              dag[str(edge)] = base_operations[chosen_ops[edge]]
+    '''        
     Return HierarchicalOperation created from dag
     '''
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1, learnt_op=learnt_op)
