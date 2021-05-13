@@ -1,5 +1,6 @@
 # External Imports
 from datetime import datetime
+import os
 import pprint
 import random
 import signal
@@ -12,13 +13,17 @@ from config import SearchConfig
 from model_controller import ModelController
 from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
-from util import get_data, save_checkpoint, accuracy, AverageMeter, print_alpha
+from util import get_data, load_checkpoint, save_checkpoint, accuracy, AverageMeter, print_alpha
  
 config = SearchConfig()
  
 class HDARTS:
     def __init__(self):
-        self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+        if config.LOAD_FROM_CHECKPOINT is None:
+            self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+        else:
+            self.dt_string = config.LOAD_FROM_CHECKPOINT + "-" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
+            self.checkpoint_model = load_checkpoint(os.path.join(config.CHECKPOINT_PATH, config.LOAD_FROM_CHECKPOINT))
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
 
@@ -96,6 +101,11 @@ class HDARTS:
             writer=self.writer
          )
         
+        # If loading from checkpoint, replace modelController's model with checkpoint model
+        if config.LOAD_FROM_CHECKPOINT is not None:
+            self.model.model = self.checkpoint_model
+            print("Loaded Checkpoint:", config.LOAD_FROM_CHECKPOINT)
+
         # Transfer model to GPU
         if torch.cuda.is_available():
             self.model = self.model.cuda()

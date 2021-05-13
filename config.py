@@ -118,7 +118,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--logdir', default=LOGDIR, help="directory to write tensorboard logs to. Do not append /.")
     parser.add_argument('--checkpoint_path', default="checkpoints_search", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
-    parser.add_argument('--learnt_model_path', default="learnt_models", help="directory to save learnt models in")
+    parser.add_argument('--load_from_checkpoint', help="date time stamp of search to load checkpoint from")
     parser.add_argument('--gpus', default='0', help='gpu device ids separated by comma. '
                     '`all` indicates use all gpus.')
     return parser

@@ -187,6 +187,14 @@ def save_checkpoint(model, epoch: int, checkpoint_root_dir, is_best=False):
         shutil.copyfile(alpha_normal_file_path, os.path.join(best_checkpoint_dir, "alpha_normal.pkl"))
         shutil.copyfile(alpha_reduce_file_path, os.path.join(best_checkpoint_dir, "alpha_reduce.pkl"))
         # shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
+    
+    # Save latest copy of model for restarting search
+    writer = model.model.writer
+    model.model.writer = None
+    path_to_checkpoint = os.path.join(checkpoint_root_dir, "latest_search_checkpoint.pt")
+    torch.save(model.model, path_to_checkpoint)
+    model.model.writer = writer
+
 
 # Function to load object from file
 def load_object(filename):
@@ -203,26 +211,12 @@ def load_alpha(alpha_dir_path, epoch=None):
     alpha_reduce = load_object(os.path.join(alpha_dir_path, str(epoch), "alpha_reduce.pkl"))
     return alpha_normal, alpha_reduce
 
-def load_checkpoint(checkpoint_root_dir, epoch=-1):
+def load_checkpoint(checkpoint_root_dir):
     '''
-    Creates model from saved files in checkpoint root directory
-    If epoch not specified, loads best checkpoint
+    Load seach checkpoint
     '''
-    alpha_file_path = "alpha.pkl"
-    weights_file_path = "weights.pkl"
-    
-    # If epoch specified set checkpoint dir to that epoch
-    checkpoint_dir = "best"
-    if epoch > 0:
-        checkpoint_dir = str(epoch)
-    alpha_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, alpha_file_path)
-    weights_file_path = os.path.join(checkpoint_root_dir, checkpoint_dir, weights_file_path)
-    
-    # Gets alpha and weights
-    alpha = load_object(alpha_file_path)
-    weights = torch.load(weights_file_path)
-
-    return alpha, weights
+    path_to_checkpont = os.path.join(checkpoint_root_dir, "latest_search_checkpoint.pt")
+    return torch.load(path_to_checkpont)
 
     
 
