@@ -249,7 +249,7 @@ class HierarchicalOperation(nn.Module):
           if alpha.num_levels != 1:
             dag[str(edge)] = base_operations[chosen_ops[edge]]
           else: # DARTS SIM - TOP K SPARSIFICATION  #FIXME: Hacky Fix
-            if edge in edges_to_keep:
+            if node_b == num_nodes-1 or edge in edges_to_keep:
               dag[str(edge)] = base_operations[chosen_ops[edge]]
     '''        
     Return HierarchicalOperation created from dag
