@@ -177,6 +177,17 @@ class HierarchicalOperation(nn.Module):
           chosen_ops[edge] = int(argmax(alpha_candidates))
         
         ops_to_create = sorted(set(chosen_ops.values()))
+
+        '''
+        Top-K Sparsification if DARTS SIM
+        '''
+        if alpha.num_levels == 1:
+          incoming_max_alpha = {}
+          for node_b in range(node_a + 1, num_nodes):
+            incoming_edge = (node_a, node_b)
+            if incoming_edge in alpha_dags[0]:
+              incoming_max_alpha[incoming_edge] = max(alpha_dags[0][incoming_edge].cpu().detach()[:-1])
+          edges_to_keep = sorted(incoming_max_alpha, key=incoming_max_alpha.get)[-2:]
       else:
         ops_to_create = range(0, alpha.num_ops_at_level[level])
       base_operations = {}
@@ -237,8 +248,8 @@ class HierarchicalOperation(nn.Module):
         else:
           if alpha.num_levels != 1:
             dag[str(edge)] = base_operations[chosen_ops[edge]]
-          else: # DARTS SIM - TOP K SPARSIFICATION
-            if alpha_dags[0][edge].cpu().detach()[:-1] in sorted([max(alpha_dags[0][(node_a, node_b2)].cpu().detach()[:-1]) for node_b2 in range(node_a + 1, num_nodes)])[-2:]:
+          else: # DARTS SIM - TOP K SPARSIFICATION  #FIXME: Hacky Fix
+            if edge in edges_to_keep:
               dag[str(edge)] = base_operations[chosen_ops[edge]]
     '''        
     Return HierarchicalOperation created from dag
