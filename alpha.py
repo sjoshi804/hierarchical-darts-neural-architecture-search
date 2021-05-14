@@ -58,7 +58,7 @@ class Alpha:
                 for node_a in range(0, num_nodes_at_level[i]):
                     for node_b in range(node_a + 1, num_nodes_at_level[i]):
                         # Skip creation of alpha if top level and edges don't exist
-                        if (i == num_levels - 1) and(node_a < 2) and ((node_b == 1) or (node_b == num_nodes_at_level[i] - 1)):
+                        if (i == self.num_levels - 1) and (node_a < 2 and node_b == 1) or (node_b == num_nodes_at_level[i] - 1):
                             continue 
 
                         # Determine num of extra ops

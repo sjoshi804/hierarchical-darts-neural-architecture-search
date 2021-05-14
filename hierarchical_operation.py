@@ -82,7 +82,9 @@ class HierarchicalOperation(nn.Module):
         edge = str((node_a, node_b))
 
         # If edge doesn't exist, skip it
-        if edge not in self.ops:
+        if self.concatenate_output and node_a >= 2 and node_b == self.num_nodes-1:
+          output[edge] = input
+        elif edge not in self.ops:
           continue
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
@@ -112,7 +114,6 @@ class HierarchicalOperation(nn.Module):
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
     - Called with top-level dag parameters in the model.__init__ and recursively generates entire model
-    TODO: Perhaps add a coin flip that drops paths entirely? Borrwoing from drop_path in darts
     - When using for learnt model extraction ensure that alpha_dags has only one alpha_dag in it
     - When using for weight sharing model training put all alpha_dags that you want shared in this
     '''
@@ -233,7 +234,7 @@ class HierarchicalOperation(nn.Module):
         
         # If input node at top level, then do not connect to output node
         # If input node at top level, do not connect to other input node
-        if (level == alpha.num_levels - 1) and (node_a < 2) and ((node_b == 1) or (node_b == num_nodes - 1)):
+        if (level == alpha.num_levels - 1) and (node_a < 2 and node_b == 1) or (node_b == num_nodes - 1):
           continue 
 
         # Create mixed operation / Select Learnt Operation on outgiong edge
