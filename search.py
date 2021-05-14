@@ -141,6 +141,7 @@ class HDARTS:
         best_top1 = 0.
         for epoch in range(start_epoch, config.EPOCHS):
             lr = w_lr_scheduler.get_lr()[0]
+            print("W Learning Rate:", lr)
 
             # Put into weight training mode - turn off gradient for alpha
             self.model.weight_training_mode()
@@ -152,9 +153,6 @@ class HDARTS:
                 w_optim=w_optim,
                 epoch=epoch,
                 lr=lr)
-
-            # Weight Learning Rate Step 
-            w_lr_scheduler.step()
 
             # GPU Memory Allocated for Model in Weight Sharing Phase   
             if epoch == 0:
@@ -182,6 +180,9 @@ class HDARTS:
                 is_best = False
             print("Saving checkpoint")
             save_checkpoint(self.model, epoch, w_optim, w_lr_scheduler, alpha_optim, os.path.join(config.CHECKPOINT_PATH,self.dt_string), is_best)
+
+            # Weight Learning Rate Step 
+            w_lr_scheduler.step()
             
             # GPU Memory Allocated for Model
             if epoch == 0:
