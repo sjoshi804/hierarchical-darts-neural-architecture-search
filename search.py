@@ -23,7 +23,6 @@ class HDARTS:
             self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         else:
             self.dt_string = config.LOAD_FROM_CHECKPOINT + "-" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
-            self.checkpoint_model = load_checkpoint(os.path.join(config.CHECKPOINT_PATH, config.LOAD_FROM_CHECKPOINT))
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
         self.num_levels = config.NUM_LEVELS
 
@@ -99,12 +98,7 @@ class HDARTS:
             num_cells=config.NUM_CELLS,
             loss_criterion=loss_criterion,
             writer=self.writer
-         )
-        
-        # If loading from checkpoint, replace modelController's model with checkpoint model
-        if config.LOAD_FROM_CHECKPOINT is not None:
-            self.model.model = self.checkpoint_model
-            print("Loaded Checkpoint:", config.LOAD_FROM_CHECKPOINT)
+        )
 
         # Transfer model to GPU
         if torch.cuda.is_available():
@@ -135,10 +129,17 @@ class HDARTS:
                     lr=config.ALPHA_LR[level],
                     weight_decay=config.ALPHA_WEIGHT_DECAY,
                     betas=config.ALPHA_MOMENTUM))
+        
+        # If loading from checkpoint, replace modelController's model with checkpoint model
+        start_epoch = 0
 
+        if config.LOAD_FROM_CHECKPOINT is not None:
+            self.model, w_optim, w_lr_scheduler, alpha_optim, start_epoch = load_checkpoint(self.model, w_optim, w_lr_scheduler, alpha_optim, os.path.join(config.CHECKPOINT_PATH, config.LOAD_FROM_CHECKPOINT))
+            print("Loaded Checkpoint:", config.LOAD_FROM_CHECKPOINT)
+                        
         # Training Loop
         best_top1 = 0.
-        for epoch in range(config.EPOCHS):
+        for epoch in range(start_epoch, config.EPOCHS):
             lr = w_lr_scheduler.get_lr()[0]
 
             # Put into weight training mode - turn off gradient for alpha
@@ -180,7 +181,7 @@ class HDARTS:
             else:
                 is_best = False
             print("Saving checkpoint")
-            save_checkpoint(self.model, epoch, config.CHECKPOINT_PATH + "/" + self.dt_string, is_best)
+            save_checkpoint(self.model, epoch, w_optim, w_lr_scheduler, alpha_optim, os.path.join(config.CHECKPOINT_PATH,self.dt_string), is_best)
             
             # GPU Memory Allocated for Model
             if epoch == 0:
@@ -191,7 +192,7 @@ class HDARTS:
             
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
-
+        
         # Terminate
         self.terminate()
  

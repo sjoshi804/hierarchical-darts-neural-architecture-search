@@ -153,9 +153,10 @@ def print_alpha_tensorboard(alpha: Alpha, writer: SummaryWriter, type: str, epoc
     with open('final_alpha.txt', 'r') as f:
         writer.add_text("Alpha at epoch: " + str(epoch), f.read())
 
-def save_checkpoint(model, epoch: int, checkpoint_root_dir, is_best=False):
+def save_checkpoint(model, epoch: int, w_optim, w_lr_scheduler, alpha_optim, checkpoint_root_dir, is_best=False):
     '''
     Saves alpha to be able to learn the model from here if everything crashes.
+    Saves checkpoint for search to continue search
     '''
     # Creates checkpoint directory if it doesn't exist
     if not os.path.exists(checkpoint_root_dir):
@@ -189,11 +190,16 @@ def save_checkpoint(model, epoch: int, checkpoint_root_dir, is_best=False):
         # shutil.copyfile(weights_file_path, os.path.join(best_checkpoint_dir, "weights.pkl"))
     
     # Save latest copy of model for restarting search
-    writer = model.model.writer
-    model.model.writer = None
     path_to_checkpoint = os.path.join(checkpoint_root_dir, "latest_search_checkpoint.pt")
-    torch.save(model.model, path_to_checkpoint)
-    model.model.writer = writer
+    state = {
+        'epoch': epoch+1,
+        'model_state_dict': model.state_dict(),
+        'w_optim': w_optim,
+        'w_lr_scheduler': w_lr_scheduler
+    }
+    for i, optim in enumerate(alpha_optim):
+        state['alpha_optim_' + str(i)] = optim
+    torch.save(state, path_to_checkpoint)
 
 
 # Function to load object from file
@@ -211,14 +217,27 @@ def load_alpha(alpha_dir_path, epoch=None):
     alpha_reduce = load_object(os.path.join(alpha_dir_path, str(epoch), "alpha_reduce.pkl"))
     return alpha_normal, alpha_reduce
 
-def load_checkpoint(checkpoint_root_dir):
+def load_checkpoint(model, w_optim, w_lr_scheduler, alpha_optim, checkpoint_root_dir):
     '''
-    Load seach checkpoint
+    Load search checkpoint
+    Sets model, w_optim, alpha_optim to checkpoint values
+    and returns modified model etc. and epoch to start from
     '''
     path_to_checkpont = os.path.join(checkpoint_root_dir, "latest_search_checkpoint.pt")
-    return torch.load(path_to_checkpont)
+    checkpoint = torch.load(path_to_checkpont)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    w_optim = checkpoint['w_optim']
+    w_lr_scheduler = checkpoint['w_lr_scheduler']
+    for i in range(len(alpha_optim)):
+        alpha_optim[i] = checkpoint['alpha_optim_' + str(i)]
 
-    
+    if torch.cuda.is_available():
+        model.cuda()
+        w_optim.cuda()
+        alpha_optim.cuda()
+        w_lr_scheduler.cuda()
+
+    return (model, w_optim, w_lr_scheduler, alpha_optim, checkpoint['epoch'])
 
 def accuracy(output, target, topk=(1,)):
     """ Computes the precision@k for the specified values of k """
@@ -303,6 +322,7 @@ def det_cell_size(num_darts_nodes: int):
     for i in range(3):
         print("Level 0", sorted_keys[i][0], "Level 1", sorted_keys[i][1], "Num Ops", num_ops[sorted_keys[i]])
     return sorted_keys
+
 class CPU_Unpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if module == 'torch.storage' and name == '_load_from_bytes':
