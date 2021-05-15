@@ -81,11 +81,15 @@ class HierarchicalOperation(nn.Module):
 
         edge = str((node_a, node_b))
 
-        # If edge doesn't exist, skip it
-        if self.concatenate_output and node_a >= 2 and node_b == self.num_nodes-1:
-          output[edge] = input
-        elif edge not in self.ops:
-          continue
+        # If edge doesn't exist, skip it or pass input through freely
+        if (type(x2) != type(None)):
+          if node_b == self.num_nodes - 1: # edge to output node
+            if node_a < 2: # from input node
+              continue
+            else: # from intermediate node
+              output[edge] = input
+          elif node_a == 0 and node_b == 1: # edge between inputs
+            continue
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
@@ -165,7 +169,7 @@ class HierarchicalOperation(nn.Module):
           
           # If input node at top level, then do not connect to output node
           # If input node at top level, do not connect to other input node
-          if (level == alpha.num_levels - 1) and (node_a < 2 and node_b == 1) or (node_b == num_nodes - 1):
+          if (level == alpha.num_levels - 1) and ((node_a < 2 and node_b == 1) or (node_b == num_nodes - 1)):
             continue 
 
           # Determine Operation to Choose
@@ -234,7 +238,7 @@ class HierarchicalOperation(nn.Module):
         
         # If input node at top level, then do not connect to output node
         # If input node at top level, do not connect to other input node
-        if (level == alpha.num_levels - 1) and (node_a < 2 and node_b == 1) or (node_b == num_nodes - 1):
+        if (level == alpha.num_levels - 1) and ((node_a < 2 and node_b == 1) or (node_b == num_nodes - 1)):
           continue 
 
         # Create mixed operation / Select Learnt Operation on outgiong edge
