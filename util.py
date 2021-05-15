@@ -233,9 +233,9 @@ def load_checkpoint(model, w_optim, w_lr_scheduler, alpha_optim, checkpoint_root
 
     if torch.cuda.is_available():
         model.cuda()
-        w_optim.cuda()
-        alpha_optim.cuda()
-        w_lr_scheduler.cuda()
+        obj_to_cuda(w_optim)
+        obj_to_cuda(alpha_optim)
+        obj_to_cuda(w_lr_scheduler)
 
     return (model, w_optim, w_lr_scheduler, alpha_optim, checkpoint['epoch'])
 
@@ -338,3 +338,9 @@ def drop_path(x, drop_prob):
         mask = torch.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
     x.div_(keep_prob).mul_(mask)
   return x
+
+def obj_to_cuda(obj):
+    for state in obj.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.cuda()
