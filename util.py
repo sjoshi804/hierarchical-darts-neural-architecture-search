@@ -234,7 +234,8 @@ def load_checkpoint(model, w_optim, w_lr_scheduler, alpha_optim, checkpoint_root
     if torch.cuda.is_available():
         model.cuda()
         obj_to_cuda(w_optim)
-        obj_to_cuda(alpha_optim)
+        for i in range(len(alpha_optim)):
+            obj_to_cuda(alpha_optim[i)
         obj_to_cuda(w_lr_scheduler)
 
     return (model, w_optim, w_lr_scheduler, alpha_optim, checkpoint['epoch'])
