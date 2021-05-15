@@ -236,7 +236,6 @@ def load_checkpoint(model, w_optim, w_lr_scheduler, alpha_optim, checkpoint_root
         obj_to_cuda(w_optim)
         for i in range(len(alpha_optim)):
             obj_to_cuda(alpha_optim[i])
-        obj_to_cuda(w_lr_scheduler)
 
     return (model, w_optim, w_lr_scheduler, alpha_optim, checkpoint['epoch'])
 
