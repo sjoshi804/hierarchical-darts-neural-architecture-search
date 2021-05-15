@@ -31,7 +31,7 @@ class HierarchicalOperation(nn.Module):
 
   Analogue of this for pt.darts is https://github.com/khanrc/pt.darts/blob/master/models/search_cells.py
   '''
-  def __init__(self, num_nodes, ops, channels_in, concatenate_output=False, learnt_op=False):
+  def __init__(self, num_nodes, ops, channels_in, concatenate_output=False, learnt_op=False, darts_sim=False):
     '''
     - num_nodes
     - ops: dict[stringified tuple for edge -> nn.Module] used to initialize the ModuleDict
@@ -44,6 +44,7 @@ class HierarchicalOperation(nn.Module):
     self.ops = nn.ModuleDict(ops)
     self.concatenate_output = concatenate_output
     self.learnt_op = learnt_op
+    self.darts_sim = darts_sim 
 
     # Channels Out
     self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
@@ -60,7 +61,7 @@ class HierarchicalOperation(nn.Module):
     if PREPROC_X2 in self.ops:
       x2 = self.ops[PREPROC_X2].forward(x2)
 
-    for node_a in range(0, self.num_nodes):
+    for node_a in range(0, self.num_nodes - 1):
       # For a given edge, determine the input to the starting node
       if (node_a == 0): 
         # for node_a = 0, it is trivial, input of entire module / first input
@@ -73,28 +74,23 @@ class HierarchicalOperation(nn.Module):
         input = []
         for prev_node in range(0, node_a):
             edge = str((prev_node, node_a))
-            if edge in output: # Ensure edge exists
-              input.append(output[edge])
+            input.append(output[edge])
         input = sum(input)
 
       for node_b in range(node_a + 1, self.num_nodes):
 
         edge = str((node_a, node_b))
 
-        # If edge doesn't exist, skip it or pass input through freely
-        if (type(x2) != type(None)):
-          if node_b == self.num_nodes - 1: # edge to output node
-            if node_a < 2: # from input node
-              continue
-            else: # from intermediate node
-              output[edge] = input
-          elif node_a == 0 and node_b == 1: # edge between inputs
-            continue
+        # If edge doesn't exist, skip it
+        if (type(x2) != type(None)) and (node_a < 2 and (node_b == 1 or node_b == self.num_nodes - 1)):
+          continue
+        elif (type(x2) != type(None)) and (node_b == self.num_nodes - 1):
+          output[edge] = input
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
-          # If not at top level maybe drop path, else don't
-          if self.learnt_op and (type(x2) == type(None)) and not isinstance(self.ops[edge], Identity): 
+          # If not at top level maybe drop path, else don't #FIXME: FOR DARTS WE WANT DROP PROB AT TOP LEVEL
+          if self.learnt_op and (self.darts_sim or type(x2) == type(None)) and not isinstance(self.ops[edge], Identity): 
             output[edge] = drop_path(self.ops[edge].forward(input), DROP_PROB)
           else:
             output[edge] = self.ops[edge].forward(input)
