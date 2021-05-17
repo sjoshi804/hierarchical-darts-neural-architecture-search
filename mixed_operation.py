@@ -1,3 +1,4 @@
+from torch.nn.modules.batchnorm import BatchNorm2d
 from operations import Zero
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,6 +24,12 @@ class MixedOperation(nn.Module):
 
     # Module List
     self.ops = nn.ModuleList([operations[key] for key in sorted(operations.keys())])
+    for i in range(len(self.ops)):
+      if "pool" in str(type(self.ops[i])).lower():
+        self.ops[i] = nn.Sequential(
+          self.ops[i],
+          BatchNorm2d(self.ops[i].channels_out, affine=False)
+        )
 
   def forward(self, x, op_num=0):
     '''
