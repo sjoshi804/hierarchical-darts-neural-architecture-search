@@ -3,11 +3,13 @@ from util import drop_path
 from numpy import argmax
 from torch import cat  
 import torch.nn as nn 
+from pprint import pprint
+from copy import deepcopy
 
 # Internal Imports
 from alpha import Alpha
 from mixed_operation import MixedOperation
-from operations import FactorizedReduce, Identity, MANDATORY_OPS, StdConv, Zero
+from operations import FactorizedReduce, Identity, MANDATORY_OPS, ReLUConvBN, StdConv, Zero
 
 # String Constants
 PREPROC_X = "preproc_x"
@@ -143,10 +145,10 @@ class HierarchicalOperation(nn.Module):
       '''
       if alpha.num_levels - 1 == level:
         if prev_reduction: 
-          dag[PREPROC_X] = FactorizedReduce(channels_in_x1, channels, affine=False)
+          dag[PREPROC_X] = FactorizedReduce(channels_in_x1, channels, affine=learnt_op)
         else:
-          dag[PREPROC_X] = StdConv(channels_in_x1, channels, 1, 1, 0, affine=False)
-        dag[PREPROC_X2] = StdConv(channels_in_x2, channels, 1, 1, 0, affine=False)
+          dag[PREPROC_X] = ReLUConvBN(channels_in_x1, channels, 1, 1, 0, affine=learnt_op)
+        dag[PREPROC_X2] = ReLUConvBN(channels_in_x2, channels, 1, 1, 0, affine=learnt_op)
 
       '''
       Determine Channels In
@@ -182,28 +184,16 @@ class HierarchicalOperation(nn.Module):
         
         ops_to_create = sorted(set(chosen_ops.values()))
 
-        '''
-        Top-K Sparsification if DARTS SIM
-        '''
-        if alpha.num_levels == 1:
-          incoming_max_alpha = {}
-          for node_b in range(node_a + 1, num_nodes):
-            incoming_edge = (node_a, node_b)
-            if incoming_edge in alpha_dags[0]:
-              incoming_max_alpha[incoming_edge] = max(alpha_dags[0][incoming_edge].cpu().detach()[:-1])
-          edges_to_keep = sorted(incoming_max_alpha, key=incoming_max_alpha.get)[-2:]
       else:
         ops_to_create = range(0, alpha.num_ops_at_level[level])
+
       base_operations = {}
-      
-      # Variable to store number of channels out for Zero Op
+
       if level == 0: 
         # Base case, do not need to recursively create operations at levels below
         primitives.update(MANDATORY_OPS) # Append mandatory ops: identity, zero to primitives
-        i = 0
-        for key in primitives: 
-            base_operations[i] = primitives[key](C=channels, stride=stride, affine=False)
-            i += 1
+        for i, key in enumerate(primitives.keys()):
+            base_operations[i] = primitives[key](C=channels, stride=stride, affine=learnt_op)
       else: 
         # Recursive case, use create_dag to create the list of operations
         if not learnt_op and level == alpha.num_levels - 1:
@@ -229,6 +219,7 @@ class HierarchicalOperation(nn.Module):
               learnt_op=learnt_op
             )
       
+      
       '''
       Create mixed operations / Place selected operations on outgoing edges for node_a
       '''
@@ -243,21 +234,20 @@ class HierarchicalOperation(nn.Module):
         # Create mixed operation / Select Learnt Operation on outgiong edge
         edge = (node_a, node_b)  
         if not learnt_op:      
-          dag[str(edge)] = MixedOperation(base_operations, [alpha_dag[edge] for alpha_dag in alpha_dags]) 
+          dag[str(edge)] = MixedOperation(deepcopy(base_operations), [alpha_dag[edge] for alpha_dag in alpha_dags]) 
 
           ''' Initialize base operation with shared weights if possible '''
           if shared_weights is not None:
             for op_num in base_operations.keys():
               base_operations[op_num].load_state_dict(shared_weights[str(edge)])
         else:
-          if alpha.num_levels != 1:
-            dag[str(edge)] = base_operations[chosen_ops[edge]]
-          else: # DARTS SIM - TOP K SPARSIFICATION  #FIXME: Hacky Fix
-            if node_b == num_nodes-1 or edge in edges_to_keep:
-              dag[str(edge)] = base_operations[chosen_ops[edge]]
+          dag[str(edge)] = deepcopy(base_operations[chosen_ops[edge]])
     '''        
     Return HierarchicalOperation created from dag
     '''
+    if learnt_op and alpha.num_levels == 1: # DARTS SIM - TRAINING PHASE
+      dag = HierarchicalOperation.darts_sparsification(dag, alpha_dags[0], num_nodes)
+
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1, learnt_op=learnt_op)
 
   # Gets state dictionary for top - 1 level ops
@@ -269,3 +259,20 @@ class HierarchicalOperation(nn.Module):
         if edge in self.ops:
           shared_weights[edge] = self.ops[edge].get_shared_weights()
     return shared_weights
+
+  # Top K Sparsification like DARTS
+  @staticmethod
+  def darts_sparsification(dag, alpha_dag, num_nodes, k=2):
+    # Decide which edges to keep
+    edges_to_keep =  [PREPROC_X, PREPROC_X2]
+    for node_b in range(num_nodes - 1):
+      incoming_max_alpha = {}
+      for node_a in range(node_b):
+        incoming_edge = (node_a, node_b)
+        if incoming_edge in alpha_dag:
+          incoming_max_alpha[incoming_edge] = max(alpha_dag[incoming_edge].cpu().detach()[:-1])
+      edges_to_keep += sorted(incoming_max_alpha, key=incoming_max_alpha.get)[-k:]
+
+    # delete ops that aren't the top2 edges
+    return { str(edge): dag[str(edge)] for edge in edges_to_keep }
+    
