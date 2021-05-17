@@ -17,5 +17,5 @@ cifar10_learnt_models
 alpha_history
 *.pt
 *.jpg
-experiments.sh
+experiments*.sh
 paperspace_jobs
