@@ -342,3 +342,11 @@ def obj_to_cuda(obj):
         for k, v in state.items():
             if isinstance(v, torch.Tensor):
                 state[k] = v.cuda()
+
+def count_parameters_in_millions(model):
+  return np.sum(np.prod(v.size()) for name, v in model.named_parameters() if ("auxiliary" not in name) and ("alpha" not in name))/1e6
+
+def print_cell_param_size(model, cell_num):
+    for key in model[cell_num].ops.keys():
+        print("Cell " + str(cell_num) + ": # of Parameters " + key + ": " + str(type(model[cell_num].ops[key])) + " (M)", count_parameters_in_millions(model[cell_num].ops[key]))
+    print("Cell " + str(cell_num) + ": # of Parameters (M)", count_parameters_in_millions(model[cell_num]))

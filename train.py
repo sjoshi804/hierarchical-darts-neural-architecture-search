@@ -11,7 +11,7 @@ import torch.nn as nn
 # Internal Imports
 from config import TrainConfig
 from learnt_model import LearntModel
-from util import AverageMeter, accuracy, get_data, load_alpha, print_alpha
+from util import AverageMeter, accuracy, get_data, load_alpha, print_alpha, count_parameters_in_millions
 from operations import OPS
 
 # Get Config
@@ -110,11 +110,8 @@ class Train:
         signal.signal(signal.SIGINT, self.terminate)
 
         # Number of parameters
-        print("# of Parameters", sum(param.numel() for name, param in self.model.named_parameters() if param.requires_grad and "auxiliary" not in name))
-
-        # Debugging 
-        torch.autograd.set_detect_anomaly(True)
-
+        print("# of Parameters (M)", count_parameters_in_millions(self.model))
+        
         # Training Loop
         best_top1 = 0.
         loss_criterion = nn.CrossEntropyLoss()
