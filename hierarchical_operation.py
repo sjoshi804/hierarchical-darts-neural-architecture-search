@@ -74,18 +74,21 @@ class HierarchicalOperation(nn.Module):
         input = []
         for prev_node in range(0, node_a):
             edge = str((prev_node, node_a))
-            input.append(output[edge])
+            if edge in output:
+              input.append(output[edge])
         input = sum(input)
 
       for node_b in range(node_a + 1, self.num_nodes):
 
         edge = str((node_a, node_b))
 
-        # If edge doesn't exist, skip it
+        # If edge shouldn't exist, skip it
         if (type(x2) != type(None)) and (node_a < 2 and (node_b == 1 or node_b == self.num_nodes - 1)):
           continue
-        elif (type(x2) != type(None)) and (node_b == self.num_nodes - 1):
+        elif (type(x2) != type(None)) and (node_b == self.num_nodes - 1): # if output collation edge, pass input as is
           output[edge] = input
+        elif edge not in self.ops: # if edge removed in sparsification, skip
+          continue
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:

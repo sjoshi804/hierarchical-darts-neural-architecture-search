@@ -167,11 +167,6 @@ def save_checkpoint(model, epoch: int, w_optim, w_lr_scheduler, alpha_optim, che
     if not os.path.exists(current_checkpoint_dir):
         os.makedirs(current_checkpoint_dir)
 
-    # Function to save object to file
-    def save_object(obj, filename):
-        with open(filename, 'wb') as output:  # Overwrites any existing file.
-            pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
-
     # Saves alpha and weights to aforementioned directory
     alpha_normal_file_path = os.path.join(current_checkpoint_dir, "alpha_normal.pkl")
     alpha_reduce_file_path = os.path.join(current_checkpoint_dir, "alpha_reduce.pkl")
@@ -277,7 +272,10 @@ def num_edges_for_dag(n: int):
     else: 
         return int(n/2) * (n - 1)
 
-
+# Function to save object to file
+def save_object(obj, filename):
+    with open(filename, 'wb') as output:  # Overwrites any existing file.
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 """
     Description: 
     Args: 
