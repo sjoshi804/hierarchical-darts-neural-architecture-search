@@ -1,4 +1,5 @@
 # External Imports
+from torch.nn.modules import module
 from util import drop_path
 from numpy import argmax
 from torch import cat  
@@ -51,7 +52,7 @@ class HierarchicalOperation(nn.Module):
     # Channels Out
     self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
 
-  def forward(self, x, x2=None, op_num=0):
+  def forward(self, x, x2=None, op_num=0, module_outputs_to_get=None):
     '''
     Iteratively compute using each edge of the dag
     '''
@@ -106,12 +107,17 @@ class HierarchicalOperation(nn.Module):
     else:
       start_node = 0
 
-    # Concatenate Output only if top level op
-    if self.concatenate_output:
-      return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
+    if module_outputs_to_get is None:
+      # Concatenate Output only if top level op
+      if self.concatenate_output:
+        return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
+      else:
+        return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
     else:
-      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
-
+      module_outputs = {}
+      for edge in module_outputs_to_get:
+        module_outputs[edge] = output[str(edge)]
+      return module_outputs
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):

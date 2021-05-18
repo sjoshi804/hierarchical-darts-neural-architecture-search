@@ -121,7 +121,7 @@ class Model(nn.Module):
       # Linear transformation without activation function
       self.classifer = nn.Linear(self.main_net[-1].channels_out, num_classes) 
 
-  def forward(self, x): 
+  def forward(self, x, module_outputs_to_get=None): 
     '''
     This function applies the pre-processing layers to the input first, then the actual model using the top-level dag, then applies the post-processing layers that first by using global_avg_pooling downsample feature maps to single values, then this is flattened and finally a linear classifer uses this to output a prediction.
     '''
@@ -149,7 +149,7 @@ class Model(nn.Module):
       else:
         x_prev = output[i - 1]
       # Append to output
-      output.append(self.main_net[i].forward(x_prev_prev, x_prev))
+      output.append(self.main_net[i].forward(x_prev_prev, x_prev, module_outputs_to_get=module_outputs_to_get[i] if i in module_outputs_to_get else None))
     y = output[-1]
 
     '''
