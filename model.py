@@ -138,6 +138,7 @@ class Model(nn.Module):
     Main model 
     '''
     output = []
+    module_outputs = {}
     for i in range(0, len(self.main_net)):
       # Use stem for input if no previous cells
       if (i - 2 < 0):
@@ -149,7 +150,12 @@ class Model(nn.Module):
       else:
         x_prev = output[i - 1]
       # Append to output
-      output.append(self.main_net[i].forward(x_prev_prev, x_prev, module_outputs_to_get=module_outputs_to_get[i] if i in module_outputs_to_get else None))
+      if module_outputs_to_get is not None and i in module_outputs_to_get:
+        cell_output, module_output = self.main_net[i].forward(x_prev_prev, x_prev, module_outputs_to_get=module_outputs_to_get[i])
+        module_outputs[i] = module_output
+      else: 
+        cell_output = self.main_net[i].forward(x_prev_prev, x_prev)
+      output.append(cell_output)
     y = output[-1]
 
     '''
@@ -164,8 +170,11 @@ class Model(nn.Module):
 
       # Classifier
       logits = self.classifer(y)
-
-      return logits
+      
+      if module_outputs_to_get is None:
+        return logits
+      else:
+        return logits, module_outputs
     else:
       return y
 

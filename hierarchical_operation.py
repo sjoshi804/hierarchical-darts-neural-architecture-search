@@ -107,17 +107,18 @@ class HierarchicalOperation(nn.Module):
     else:
       start_node = 0
 
+
+    if self.concatenate_output:
+      op_output = cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
+    else:
+      op_output = sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
     if module_outputs_to_get is None:
-      # Concatenate Output only if top level op
-      if self.concatenate_output:
-        return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
-      else:
-        return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
+      return op_output
     else:
       module_outputs = {}
       for edge in module_outputs_to_get:
         module_outputs[edge] = output[str(edge)]
-      return module_outputs
+      return op_output, module_outputs
 
   @staticmethod
   def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):

@@ -103,7 +103,7 @@ class LearntModel(nn.Module):
         # Linear transformation without activation function
         self.classifer = nn.Linear(self.main_net[-1].channels_out, num_classes) 
 
-    def forward(self, x): 
+    def forward(self, x, module_outputs_to_get=None): 
         '''
         This function applies the pre-processing layers to the input first, then the actual model using the top-level dag, then applies the post-processing layers that first by using global_avg_pooling downsample feature maps to single values, then this is flattened and finally a linear classifer uses this to output a prediction.
         '''
@@ -119,6 +119,7 @@ class LearntModel(nn.Module):
         Main model 
         '''
         output = []
+        module_outputs = {}
         for i in range(0, len(self.main_net)):
         # Use stem for input if no previous cells
             if (i - 2 < 0):
@@ -130,7 +131,12 @@ class LearntModel(nn.Module):
             else:
                 x_prev = output[i - 1]
             # Append to output
-            output.append(self.main_net[i].forward(x_prev_prev, x_prev))
+            if module_outputs_to_get is not None and i in module_outputs_to_get:
+                cell_output, module_output = self.main_net[i].forward(x_prev_prev, x_prev, module_outputs_to_get=module_outputs_to_get[i])
+                module_outputs[i] = module_output
+            else: 
+                cell_output = self.main_net[i].forward(x_prev_prev, x_prev)
+            output.append(cell_output)
             y = output[-1]
 
         '''
@@ -151,5 +157,7 @@ class LearntModel(nn.Module):
         if self.auxiliary and self.training:
             logits_aux = self.auxiliary_head.forward(output[self.reduction_cell_indices[-1]])
             return logits, logits_aux 
-        else: 
+        elif module_outputs_to_get is not None: 
+            return logits, module_outputs
+        else:
             return logits

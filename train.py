@@ -1,5 +1,6 @@
 # External Imports
 from datetime import datetime
+from lucent.optvis import render
 from pprint import pprint
 from torch.utils.tensorboard.writer import SummaryWriter
 import os
@@ -158,7 +159,11 @@ class Train:
  
         # Log Best Accuracy so far
         print("Final best Prec@1 = {:.4%}".format(best_top1))
-
+        self.model.eval()
+        def objective_function(model, img):
+            _, module_outputs = model.forward(img, module_outputs_to_get={0: [(0,2)]})
+            return -module_outputs[0][(0,2)].mean()
+        render.render_vis(model, objective_function)
         self.terminate()
     
     def train(self, train_loader, model, w_optim, epoch, lr, gradient_clip, epochs, loss_criterion):
