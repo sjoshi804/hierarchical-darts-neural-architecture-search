@@ -274,5 +274,10 @@ class HierarchicalOperation(nn.Module):
       edges_to_keep += sorted(incoming_max_alpha, key=incoming_max_alpha.get)[-k:]
 
     # delete ops that aren't the top2 edges
-    return { str(edge): dag[str(edge)] for edge in edges_to_keep }
+    # FIXME: DARTS NO SKIP
+    filtered_ops = {}
+    for edge in edges_to_keep:
+      if not isinstance(dag[str(edge)], Identity):
+        filtered_ops[str(edge)] = dag[str(edge)]
+    return filtered_ops
     
