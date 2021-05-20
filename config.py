@@ -168,6 +168,7 @@ class TrainConfig(BaseConfig):
     parser.add_argument('--checkpoint_path', default="checkpoints_train", help="directory to save checkpoints in")
     parser.add_argument('--percentage_of_data', type=int, default=PERCENTAGE_OF_DATA, help="percentage of the dataset to use")
     parser.add_argument('--alpha_dir_path', help="Directory where the various alpha normal and alpha reduce are stored")
+    parser.add_argument('--no_auxiliary', action='store_true', help="Disable auxiliary head")
     return parser
   
   def __init__(self):

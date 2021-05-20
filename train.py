@@ -85,7 +85,7 @@ class Train:
             stem_multiplier=config.STEM_MULTIPLIER,
             num_classes=num_classes,
             primitives=OPS,
-            auxiliary=True            
+            auxiliary=(not config.NO_AUXILIARY)
         )
 
         # Port model to gpu if availabile
@@ -184,11 +184,15 @@ class Train:
 
             # Gradient Step
             w_optim.zero_grad()
-            logits,logits_aux = model(trn_X)
-            
-            loss = loss_criterion(logits, trn_y) # Only supports cross entropy loss rn
-            loss = loss + loss_criterion(logits_aux, trn_y) * 0.4 # Make this adjustable
-            loss.backward()
+            if config.no_auxiliary:
+                logits =  model(trn_X)
+                loss = loss_criterion(logits, trn_y)
+                loss.backward()
+            else:
+                logits,logits_aux = model(trn_X)
+                loss = loss_criterion(logits, trn_y) # Only supports cross entropy loss rn
+                loss = loss + loss_criterion(logits_aux, trn_y) * 0.4 # Make this adjustable
+                loss.backward()
 
             # gradient clipping
             nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)

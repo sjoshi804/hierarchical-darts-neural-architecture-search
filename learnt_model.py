@@ -85,9 +85,9 @@ class LearntModel(nn.Module):
             print("Channels In / Out for Cells")
             print("Cell", i, "C_in", curr_channels, "C_out", self.main_net[i].channels_out)
         
-        print("Edges in Final Cell", self.main_net[0].ops.keys())
-        for key in self.main_net[0].ops.keys():
-            print(key, type(self.main_net[0].ops[key]))
+        print("Normal Cell", self.main_net[0])
+        print("Reduction Cell", self.main_net[self.reduction_cell_indices[0]])
+
         '''
         Auxiliary Head (CIFAR)
         ''' 
