@@ -5,13 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: train.py",
+            "type": "python",
+            "request": "launch",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args":  ["--epochs=100","--channels_start=8","--dataset=cifar10","--num_download_workers=8","--batch_size=64","--num_cells=6","--alpha_dir_path=checkpoints_search/num_nodes_4_4/","--weights_lr=0.1"]
+        },
+        {
+            "name": "Python: feature_visualization.py",
+            "type": "python",
+            "request": "launch",
+            "program": "feature_visualization.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["checkpoints_train\/cifar10\/19-05-2021--12-18-46\/best.pt"]
+        },
+        {
+            "name": "Python: current file",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "args": ["checkpoints_train\/cifar10\/19-05-2021--12-18-46\/best.pt"]
+            "justMyCode": true
         }
     ]
 }
