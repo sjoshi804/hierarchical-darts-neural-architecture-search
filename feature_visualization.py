@@ -1,4 +1,5 @@
 # Internal Imports
+from os import error
 from alpha import Alpha
 from learnt_model import LearntModel
 from model import Model
@@ -23,6 +24,7 @@ import torchvision
 import numpy as np
 from itertools import product
 
+''' Model Setup '''
 
 # Seed for reproducibility
 torch.manual_seed(0)
@@ -40,12 +42,32 @@ if torch.cuda.is_available():
     model.cuda()
 model.eval()
 
+''' Helper Functions'''
+
+def parse_layer(layer):
+    if "main_net" in layer: # FIXME: Need to change for HDARTS
+        _, _, cell_num, _, edge, _ = tuple(layer.split("_"))
+        return int(cell_num), edge
+    else:
+        raise error("Invalid Layer Name")
+
 @torch.no_grad()
 def get_layer(model, layer, X):
-    hook = render.ModuleHook(getattr(model, layer))
+    cell_num, edge = parse_layer(layer)
+    hook = render.ModuleHook(model.main_net[cell_num].ops[edge].op)
     model(X)
     hook.close()
-    return hook.features
+    return f.relu(hook.features)
+
+@objectives.wrap_objective()
+def dot_compare(layer, acts, batch=1):
+    def inner(T):
+        pred = T(layer)[batch]
+        return -(pred * acts).sum(dim=0, keepdims=True).mean()
+
+    return inner
+
+''' Activation Grid Functions '''
 
 def render_activation_grid_less_naive(
     img,
@@ -153,7 +175,7 @@ def render_activation_grid_less_naive(
 
     def objective_func(model):
         # shape: (batch_size, layer_channels, cell_layer_height, cell_layer_width)
-        pred = model(layer)
+        pred = f.relu(model(layer))
         # use the sampled indices from `sample` to get the corresponding targets
         target = acts[sample.inds].to(pred.device)
         # shape: (batch_size, layer_channels, 1, 1)
@@ -188,7 +210,84 @@ def render_activation_grid_less_naive(
     render.show(grid)
     return imgs
 
+def render_activation_grid_very_naive(
+    img, model, layer="main_net_0_ops_(1, 5)_op", cell_image_size=48, n_steps=1024
+):
+    # First wee need, to normalize and resize the image
+    img = torch.tensor(np.transpose(img, [2, 0, 1])).to(device)
+    normalize = (
+        transform.preprocess_inceptionv1()
+        if model._get_name() == "InceptionV1"
+        else transform.normalize()
+    )
+    transforms = [
+        normalize,
+        torch.nn.Upsample(size=224, mode="bilinear", align_corners=True),
+    ]
+    transforms_f = transform.compose(transforms)
+    # shape: (1, 3, original height of img, original width of img)
+    img = img.unsqueeze(0)
+    # shape: (1, 3, 224, 224)
+    img = transforms_f(img)
+
+    # Here we compute the activations of the layer `layer` using `img` as input
+    # shape: (layer_channels, layer_height, layer_width), the shape depends on the layer
+    acts = get_layer(model, layer, img)[0]
+    layer_channels, layer_height, layer_width = acts.shape
+    # for each position `(y, x)` in the feature map `acts`, we optimize an image
+    # to match with the features `acts[:, y, x]`
+    # This means that the total number of cells (which is the batch size here) 
+    # in the grid is layer_height*layer_width.
+    nb_cells = layer_height * layer_width
+
+    # Parametrization of the of each cell in the grid
+    param_f = lambda: param.image(
+        cell_image_size, batch=nb_cells
+    )
+    params, image_f = param_f()
+
+    obj = objectives.Objective.sum(
+        [
+            # for each position in `acts`, maximize the dot product between the activations
+            # `acts` at the position (y, x) and the features of the corresponding
+            # cell image on our 'grid'. The activations at (y, x) is a vector of size
+            # `layer_channels` (this depends on the `layer`). The features
+            # of the corresponding cell on our grid is a tensor of shape
+            # (layer_channels, cell_layer_height, cell_layer_width).
+            # Note that cell_layer_width != layer_width and cell_layer_height != layer_weight
+            # because the cell image size is smaller than the image size.
+            # With `dot_compare`, we maximize the dot product between
+            # cell_activations[y_cell, x_xcell] and acts[y,x] (both of size `layer_channels`)
+            # for each possible y_cell and x_cell, then take the average to get a single
+            # number. Check `dot_compare for more details.`
+            dot_compare(layer, acts[:, y:y+1, x:x+1], batch=x + y * layer_width)
+            for i, (x, y) in enumerate(product(range(layer_width), range(layer_height)))
+        ]
+    )
+    results = render.render_vis(
+        model,
+        obj,
+        param_f,
+        thresholds=(n_steps,),
+        progress=True,
+        fixed_image_size=cell_image_size,
+        show_image=False,
+    )
+    # shape: (layer_height*layer_width, cell_image_size, cell_image_size, 3)
+    imgs = results[-1] # last step results
+    # shape: (layer_height*layer_width, 3, cell_image_size, cell_image_size)
+    imgs = imgs.transpose((0, 3, 1, 2))
+    imgs = torch.from_numpy(imgs)
+    imgs = imgs[:, :, 2:-2, 2:-2]
+    # turn imgs into a a grid
+    grid = torchvision.utils.make_grid(imgs, nrow=int(np.sqrt(nb_cells)), padding=0)
+    grid = grid.permute(1, 2, 0)
+    grid = grid.numpy()
+    render.show(grid)
+    return imgs
+
+''' Visualize '''
 img = np.array(Image.open("dog.jpg"), np.float32)
 _ = render_activation_grid_less_naive(
-    img, model, layer="main_net_3_ops_(1, 5)_op", cell_image_size=60, n_steps=1024, batch_size=64
+    img, model, cell_image_size=int(sys.argv[2]), n_steps=int(sys.argv[3]), batch_size=int(sys.argv[4])
 )
