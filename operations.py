@@ -33,7 +33,7 @@ LEN_VAE_OPS = len(VAE_OPS)
 LEN_SIMPLE_OPS = len(SIMPLE_OPS)
 
 MANDATORY_OPS = {
-  "identity": lambda C, stride, affine: Identity(C, stride),
+  "identity": lambda C, stride, affine: Identity(C) if stride == 1 else FactorizedReduce(C, C, affine=affine),
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
@@ -77,15 +77,12 @@ class Zero(nn.Module):
 
 class Identity(nn.Module):
 
-  def __init__(self, C, stride):
+  def __init__(self, C):
     super(Identity, self).__init__()
-    self.stride = stride
     self.channels_out = C
 
   def forward(self, x):
-    if self.stride == 1:
-      return x
-    return x[:,:,::self.stride,::self.stride]
+    return x
 
 class Double(nn.Module):
 
