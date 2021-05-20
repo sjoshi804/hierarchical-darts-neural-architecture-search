@@ -1,10 +1,11 @@
 # External Imports
-from util import drop_path
-from numpy import argmax
-from torch import cat  
-import torch.nn as nn 
-from pprint import pprint
 from copy import deepcopy
+from numpy import argmax
+from pprint import pprint
+from torch import cat  
+from util import drop_path
+import random
+import torch.nn as nn 
 
 # Internal Imports
 from alpha import Alpha
@@ -245,8 +246,11 @@ class HierarchicalOperation(nn.Module):
     '''        
     Return HierarchicalOperation created from dag
     '''
-    if learnt_op and alpha.num_levels == 1: # DARTS SIM - TRAINING PHASE
-      dag = HierarchicalOperation.darts_sparsification(dag, alpha_dags[0], num_nodes)
+    if learnt_op:
+      if alpha.num_levels == 1: # DARTS SIM - TRAINING PHASE
+        dag = HierarchicalOperation.darts_sparsification(dag, alpha_dags[0], num_nodes)
+      elif level == 0:
+        dag = HierarchicalOperation.hdarts_sparsification(dag, input_stride==2)
 
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1, learnt_op=learnt_op)
 
@@ -276,3 +280,17 @@ class HierarchicalOperation(nn.Module):
     # delete ops that aren't the top2 edges
     return { str(edge): dag[str(edge)] for edge in edges_to_keep }
     
+
+  @staticmethod
+  def hdarts_sparsification(dag, is_reduction, fraction_edges_to_skip_connect=0.5):
+    num_to_skip = int(len(dag.keys()) * fraction_edges_to_skip_connect)
+    already_skip = []
+    for key in dag.keys():
+      if isinstance(dag[key], Identity) or isinstance(dag[key], FactorizedReduce):
+        already_skip.append(key)
+    for key in random.sample([key for key in dag.keys() if key not in already_skip], num_to_skip):
+      if is_reduction and "0" in key:
+        dag[key] = FactorizedReduce(dag[key].channels_out, dag[key].channels_out)
+      else:
+        dag[key] = Identity(dag[key].channels_out)
+    return dag
