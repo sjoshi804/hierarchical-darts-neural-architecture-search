@@ -50,7 +50,7 @@ class HierarchicalOperation(nn.Module):
     self.darts_sim = darts_sim 
 
     # Channels Out
-    self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
+    self.channels_out = channels_in * (num_nodes - 2) if concatenate_output else channels_in
 
   def forward(self, x, x2=None, op_num=0):
     '''
@@ -109,11 +109,11 @@ class HierarchicalOperation(nn.Module):
 
     # Concatenate Output only if top level op
     if self.concatenate_output:
-      return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
-    else:
-      if output[str((0, self.num_nodes - 1))].shape[3] != x.shape[3]:
+      if output[str((2, self.num_nodes - 1))].shape[3] != x.shape[3]:
         x = FactorizedReduce(x.shape[1], x.shape[1]).cuda()(x)
-      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]) + x
+      return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)] + [x]), dim=1)
+    else:
+      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
 
 
   @staticmethod
