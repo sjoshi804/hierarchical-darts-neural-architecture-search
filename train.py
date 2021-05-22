@@ -3,6 +3,7 @@ from datetime import datetime
 from pprint import pprint
 from torch.utils.tensorboard.writer import SummaryWriter
 import os
+import random
 import signal
 import sys
 import torch 
@@ -43,6 +44,11 @@ class Train:
         
         # Load best alpha
         self.alpha_normal, self.alpha_reduce = load_alpha(config.ALPHA_DIR_PATH)  
+
+        # Seed for reproducibility
+        torch.manual_seed(config.SEED)
+        random.seed(config.SEED)
+
 
     def run(self):
         # Get Data & MetaData
