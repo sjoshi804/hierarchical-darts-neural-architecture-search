@@ -42,8 +42,8 @@ class HDARTS:
         pprint.pprint(hparams)
 
         # Seed for reproducibility
-        torch.manual_seed(0)
-        random.seed(0)
+        torch.manual_seed(config.SEED)
+        random.seed(config.SEED)
 
     def run(self):
         # Get Data & MetaData
