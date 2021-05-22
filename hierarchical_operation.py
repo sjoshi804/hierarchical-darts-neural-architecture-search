@@ -110,9 +110,7 @@ class HierarchicalOperation(nn.Module):
     if self.concatenate_output:
       return cat(tuple([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]), dim=1)
     else:
-      if output[str((0, self.num_nodes - 1))].shape[3] != x.shape[3]:
-        x = FactorizedReduce(x.shape[1], x.shape[1]).cuda()(x)
-      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)]) + x
+      return sum([output[str((prev_node, self.num_nodes - 1))] for prev_node in range(start_node, self.num_nodes - 1)])
 
 
   @staticmethod
