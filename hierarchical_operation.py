@@ -237,7 +237,7 @@ class HierarchicalOperation(nn.Module):
         # Create mixed operation / Select Learnt Operation on outgiong edge
         edge = (node_a, node_b)  
         if not learnt_op:      
-          dag[str(edge)] = MixedOperation(deepcopy(base_operations), [alpha_dag[edge] for alpha_dag in alpha_dags]) 
+          dag[str(edge)] = MixedOperation(base_operations, [alpha_dag[edge] for alpha_dag in alpha_dags]) 
 
           ''' Initialize base operation with shared weights if possible '''
           if shared_weights is not None:
