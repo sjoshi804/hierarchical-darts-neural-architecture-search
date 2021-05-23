@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": ["checkpoints_train\/cifar10\/19-05-2021--12-18-46\/best.pt"]
         }
     ]
 }

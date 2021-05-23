@@ -29,6 +29,5 @@ alpha_reduce.parameters[0][0][(1,5)][1] = 1
 alpha_reduce.parameters[0][0][(2,3)][8] = 1
 alpha_reduce.parameters[0][0][(2,4)][8] = 1
 alpha_reduce.parameters[0][0][(2,5)][8] = 1
-
-util.save_object(alpha_norm, "checkpoints_search/17-05-2021--12-23-29/best/alpha_normal.pkl")
-util.save_object(alpha_reduce, "checkpoints_search/17-05-2021--12-23-29/best/alpha_reduce.pkl")
+util.save_object(alpha_norm, "darts_alpha/best/alpha_normal.pkl")
+util.save_object(alpha_reduce, "darts_alpha/best/alpha_reduce.pkl")

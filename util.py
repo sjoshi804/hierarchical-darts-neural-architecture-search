@@ -113,7 +113,7 @@ def update_alpha_history(alpha_history, alpha):
         for op_num in range(0, len(alpha.parameters[level])):
             for edge in alpha.parameters[level][op_num]:
                 chosen_op = int(np.argmax(alpha.parameters[level][op_num][edge].cpu().detach()))
-                alpha_history[level][op_num][edge].append(chosen_op)
+                alpha_history[level][op_num][edge].append((chosen_op, max(alpha.parameters[level][op_num][edge].cpu().detach())))
     return alpha_history
 
 def write_alpha_history_to_csvs(alpha_history, alpha, alpha_type, write_dir):
@@ -127,8 +127,8 @@ def write_alpha_history_to_csvs(alpha_history, alpha, alpha_type, write_dir):
             for edge in alpha.parameters[level][op_num]:
                 with open(alpha_type + "-level-" + str(level) + "-op-" + str(op_num) + "-edge-" + str(edge) + ".csv", mode='w+') as csv_file:
                     csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    for epoch, chosen_op in enumerate(alpha_history[level][op_num][edge]):
-                        csv_writer.writerow([epoch, chosen_op])
+                    for epoch, (chosen_op, alpha_val) in enumerate(alpha_history[level][op_num][edge]):
+                        csv_writer.writerow([epoch, chosen_op, alpha_val])
     os.chdir(curr_dir)
     return 
 

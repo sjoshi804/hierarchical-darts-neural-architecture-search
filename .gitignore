@@ -19,3 +19,4 @@ alpha_history
 *.jpg
 experiments*.sh
 paperspace_jobs
+feature*.png
