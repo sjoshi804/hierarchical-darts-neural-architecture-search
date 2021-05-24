@@ -72,7 +72,7 @@ class Alpha:
                         if i == self.num_levels - 1 or not randomize:
                             dict[(node_a, node_b)] = nn.Parameter(1e-3 * randn(num_ops_at_level[i] + extra_ops))
                         else:
-                            dict[(node_a, node_b)] = nn.Parameter(rand(num_ops_at_level[i] + extra_ops))
+                            dict[(node_a, node_b)] = nn.Parameter(1e-1 * randn(num_ops_at_level[i] + extra_ops))
                     
             self.parameters[i] = alpha_i
 
