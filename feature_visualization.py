@@ -41,6 +41,7 @@ model = torch.load(sys.argv[1])
 if torch.cuda.is_available():
     model.cuda()
 model.eval()
+print(util.get_model_layers(model))
 
 ''' Helper Functions'''
 
@@ -53,8 +54,8 @@ def parse_layer(layer):
 
 @torch.no_grad()
 def get_layer(model, layer, X):
-    cell_num, edge = parse_layer(layer)
-    hook = render.ModuleHook(model.main_net[cell_num].ops[edge].op)
+    #cell_num, edge = parse_layer(layer)
+    hook = render.ModuleHook(model.main_net[0].ops[str((1,2))].ops[str((0,1))].op)
     model(X)
     hook.close()
     return f.relu(hook.features)
@@ -68,11 +69,10 @@ def dot_compare(layer, acts, batch=1):
     return inner
 
 ''' Activation Grid Functions '''
-
 def render_activation_grid_less_naive(
     img,
     model,
-    layer="main_net_0_ops_(1, 5)_op",
+    layer="main_net_0_ops_(1, 2)_ops_(0, 1)_op",
     cell_image_size=60,
     n_groups=6,
     n_steps=1024,
@@ -209,9 +209,9 @@ def render_activation_grid_less_naive(
     grid = grid.numpy()
     render.show(grid)
     return imgs
-
+    
 def render_activation_grid_very_naive(
-    img, model, layer="main_net_0_ops_(1, 5)_op", cell_image_size=48, n_steps=1024
+    img, model, layer="main_net_0_ops_(1, 2)_ops_(0, 1)_op", cell_image_size=48, n_steps=1024
 ):
     # First wee need, to normalize and resize the image
     img = torch.tensor(np.transpose(img, [2, 0, 1])).to(device)
@@ -287,7 +287,7 @@ def render_activation_grid_very_naive(
     return imgs
 
 ''' Visualize '''
+print(sys.argv)
 img = np.array(Image.open("dog.jpg"), np.float32)
-_ = render_activation_grid_less_naive(
-    img, model, cell_image_size=int(sys.argv[2]), n_steps=int(sys.argv[3]), batch_size=int(sys.argv[4])
-)
+_ = render_activation_grid_very_naive(
+    img, model, cell_image_size=int(sys.argv[2]), n_steps=int(sys.argv[3]))
