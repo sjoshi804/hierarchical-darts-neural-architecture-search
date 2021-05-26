@@ -20,7 +20,7 @@
             "program": "feature_visualization.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["checkpoints_train\/cifar10\/19-05-2021--12-18-46\/best.pt"]
+            "args": ["checkpoints_train/cifar10/24-05-2021--11-12-22/best.pt", "6" ,"4"]
         },
         {
             "name": "Python: current file",
