@@ -35,6 +35,9 @@ def get_data(dataset_name, data_path, cutout_length, validation):
     elif dataset_name == 'cifar10':
         dataset = dset.CIFAR10
         n_classes = 10
+    elif dataset_name =='cifar100':
+        dataset = dset.CIFAR100
+        n_classes = 100
     else:
         raise ValueError('Unexpected Dataset = {}'.format(dataset_name))
 
@@ -47,7 +50,8 @@ def get_data(dataset_name, data_path, cutout_length, validation):
         shape = trn_data.data.shape
     elif dataset_name == 'cifar10':
         shape = trn_data.data.shape
-            
+    elif dataset_name == 'cifar100':
+        shape = trn_data.data.shape
 
     # assuming shape is NHW or NHWC
     # shape = trn_data.train_data.shape

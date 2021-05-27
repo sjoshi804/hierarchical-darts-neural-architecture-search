@@ -87,7 +87,7 @@ class SearchConfig(BaseConfig):
     parser = get_parser("Search config")
     parser.add_argument('--name', default='HDARTS')
     parser.add_argument('--datapath', default=DATAPATH)
-    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / fashionmnist')
+    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / cifar100')
     parser.add_argument('--num_levels', type=int, default=NUM_LEVELS)
     parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
     parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
@@ -145,7 +145,7 @@ class TrainConfig(BaseConfig):
     parser = get_parser("Train config")
     parser.add_argument('--name', default='HDARTS')
     parser.add_argument('--datapath', default=DATAPATH)
-    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / fashionmnist')
+    parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / cifar100')
 
     parser.add_argument('--stem_multiplier', type=int, default=STEM_MULTIPLIER)
     parser.add_argument('--channels_start', type=int, default=CHANNELS_START)
