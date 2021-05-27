@@ -14,7 +14,7 @@ LOGDIR = "logs"
 
 # DATASET Config
 dir_path = os.getcwd()
-DATASET =  "mnist"
+DATASET =  "cifar10"
 DATAPATH = os.path.join(dir_path, "data")
 
 # WEIGHTS Config

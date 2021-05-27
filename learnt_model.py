@@ -92,7 +92,7 @@ class LearntModel(nn.Module):
         Auxiliary Head (CIFAR)
         ''' 
         if self.auxiliary:
-            self.auxiliary_head = AuxiliaryHeadCIFAR(self.main_net[self.reduction_cell_indices[-1]].channels_out, 10)
+            self.auxiliary_head = AuxiliaryHeadCIFAR(self.main_net[self.reduction_cell_indices[-1]].channels_out, num_classes)
         '''
         Post-processing Layers
         '''
