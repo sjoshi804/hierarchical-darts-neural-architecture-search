@@ -12,17 +12,3 @@ The mathematical notation and the actual algorithm for HDARTS is detailed here a
 
 - Alpha - class that encapsulates the architecture parameters
 - Model - class that is used to instantiate a network from a given Alpha and Primitives
-
-## Results
-
-| Dataset  | Validation Accuracy  |  GPU Time (Minutes) |
-|---|---|---|
-| MNIST | 90%  |  15 |
-
-# Top Tasks
-
-
-TODO: Visualize learnt model
-
-TODO: Change initial weight on Zero operation to encourage sparsity?
-
