@@ -24,7 +24,6 @@ SIMPLE_OPS = {
   "triple": lambda C, stride, affine: Triple(C, stride)
 }
 
-# FIXME: Fix this to make more sense
 VAE_OPS = {
   "conv_3x3_4x_bn_relu": lambda C, stride, affine: ConvBNReLu(C, 4*C, 3, 1, 1)
 }
@@ -37,17 +36,13 @@ MANDATORY_OPS = {
   "zero": lambda C, stride, affine: Zero(C, C, stride)
 }
 
-# TODO: Try replacing the larger convolutions with stacking of the smaller ones instead
 OPS = {
   'avg_pool_3x3' : lambda C, stride, affine: AvgPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False),
-  'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), #(3, stride=stride, padding=1), #add batch normalization here
+  'max_pool_3x3' : lambda C, stride, affine: MaxPool2d(C, C, 3, stride=stride, padding=1, count_include_pad=False), 
   'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
-  #'2_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 2),
   'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
-  #'3_stacked_sep_conv_3x3': lambda C, stride, affine: StackedSepConv(C, C, 3, stride, 1, 3),
   'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
   'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
-  #'2_stacked_dil_conv_3x3': lambda C, stride, affine: StackedDilConv(C, C, 3, stride, 2, 2, 2),
   'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
   'conv_7x1_1x7' : lambda C, stride, affine: Conv7x1_1x7(C, stride, affine=affine)
 }

@@ -95,7 +95,7 @@ class HierarchicalOperation(nn.Module):
         elif isinstance(self.ops[edge], MixedOperation):
           output[edge] = self.ops[edge].forward(input, op_num=op_num)
         else:
-          # If not at top level maybe drop path, else don't #FIXME: FOR DARTS WE WANT DROP PROB AT TOP LEVEL
+          # If not at top level maybe drop path, else don't
           if self.learnt_op and (self.darts_sim or type(x2) == type(None)) and not isinstance(self.ops[edge], Identity): 
             output[edge] = drop_path(self.ops[edge].forward(input), DROP_PROB)
           else:
