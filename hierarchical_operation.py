@@ -117,7 +117,7 @@ class HierarchicalOperation(nn.Module):
 
 
   @staticmethod
-  def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, shared_weights=None, learnt_op=False, input_stride=1):
+  def create_dag(level: int, alpha: Alpha, alpha_dags: list, primitives: dict, channels_in_x1: int, channels_in_x2=None, channels=None, is_reduction=False, prev_reduction=False, learnt_op=False, input_stride=1):
     '''
     - Recursive funnction to create the computational dag from a given point.
     - Done in this manner to try and ensure that number of channels_in is correct for each operation.
@@ -238,11 +238,6 @@ class HierarchicalOperation(nn.Module):
         edge = (node_a, node_b)  
         if not learnt_op:      
           dag[str(edge)] = MixedOperation(base_operations, [alpha_dag[edge] for alpha_dag in alpha_dags]) 
-
-          ''' Initialize base operation with shared weights if possible '''
-          if shared_weights is not None:
-            for op_num in base_operations.keys():
-              base_operations[op_num].load_state_dict(shared_weights[str(edge)])
         else:
           dag[str(edge)] = deepcopy(base_operations[chosen_ops[edge]])
     '''        
@@ -253,16 +248,6 @@ class HierarchicalOperation(nn.Module):
         dag = HierarchicalOperation.darts_sparsification(dag, alpha_dags[0], num_nodes)
 
     return HierarchicalOperation(alpha.num_nodes_at_level[level], dag, channels, level==alpha.num_levels - 1, learnt_op=learnt_op)
-
-  # Gets state dictionary for top - 1 level ops
-  def get_shared_weights(self):
-    shared_weights = {}
-    for node_a in range(self.num_nodes):
-      for node_b in range(node_a + 1, self.num_nodes):
-        edge = str((node_a, node_b))
-        if edge in self.ops:
-          shared_weights[edge] = self.ops[edge].get_shared_weights()
-    return shared_weights
 
   # Top K Sparsification like DARTS
   @staticmethod

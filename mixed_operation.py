@@ -39,9 +39,3 @@ class MixedOperation(nn.Module):
       return sum([w * self.ops[0].forward(x, op_num=op_num) for op_num, w in enumerate(F.softmax(self.alpha_e[0], dim=-1))])
     else:
       return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e[op_num], dim=-1), self.ops))
-
-  def get_shared_weights(self):
-    if len(self.ops) > 2:
-      raise Exception("Get shared weights called on Mixed Op with more than 1 op (not including Zero)")
-    else:
-      return self.ops[0].state_dict()
