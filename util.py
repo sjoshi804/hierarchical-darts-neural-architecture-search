@@ -24,7 +24,7 @@ from alpha import Alpha
 import preProcess
 
 
-def get_data(dataset_name, data_path, cutout_length, validation):
+def get_data(dataset_name, data_path, cutout_length, test=False):
     """ Get torchvision dataset """
 
     # If dataset is supported, initialize from torchvision.datasets
@@ -60,7 +60,7 @@ def get_data(dataset_name, data_path, cutout_length, validation):
     input_size = shape[1]
 
     ret = [input_size, input_channels, n_classes, trn_data]
-    if validation: # append validation data
+    if test: # append validation data
         ret.append(dataset(root=data_path, train=False, download=True, transform=val_transform))
 
     return ret

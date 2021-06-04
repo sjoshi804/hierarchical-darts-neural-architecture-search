@@ -52,26 +52,26 @@ class Train:
 
     def run(self):
         # Get Data & MetaData
-        input_size, input_channels, num_classes, train_data, valid_data = get_data(
+        input_size, input_channels, num_classes, train_data, test_data = get_data(
             dataset_name=config.DATASET,
             data_path=config.DATAPATH,
             cutout_length=16,
-            validation=True)
+            test=True)
 
-        # Train / Validation Split
+        # Train, Test Data Loaders
         n_train = len(train_data)
-        n_valid = len(valid_data)
+        n_test = len(test_data)
         if config.PERCENTAGE_OF_DATA < 100:
             n_train = (n_train // 100) * config.PERCENTAGE_OF_DATA
-            n_valid = (n_valid // 100) * config.PERCENTAGE_OF_DATA
+            n_test = (n_test // 100) * config.PERCENTAGE_OF_DATA
             train_data = train_data[:n_train]
-            valid_data = valid_data[:n_valid]
+            test_data = test_data[:n_test]
         
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
-        valid_loader = torch.utils.data.DataLoader(train_data,
+        test_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
@@ -138,10 +138,10 @@ class Train:
             # Learning Rate Step
             lr_scheduler.step()
 
-            # Validation (One epoch)
+            # Test (One epoch)
             cur_step = (epoch+1) * len(train_loader)
-            top1 = self.validate(
-                valid_loader=valid_loader,
+            top1 = self.test(
+                test_loader=test_loader,
                 model=self.model,
                 epoch=epoch,
                 cur_step=cur_step,
@@ -224,14 +224,14 @@ class Train:
  
         print("Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, epochs, top1.avg))
 
-    def validate(self, valid_loader, model, epoch, cur_step, epochs):
+    def test(self, test_loader, model, epoch, cur_step, epochs):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
 
         model.eval()
         with torch.no_grad():
-            for step, (X, y) in enumerate(valid_loader):
+            for step, (X, y) in enumerate(test_loader):
                 # Batch Size
                 N = X.size(0)
                 
@@ -252,19 +252,19 @@ class Train:
                 top1.update(prec1.item(), N)
                 top5.update(prec5.item(), N)
 
-                if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(valid_loader)-1:
+                if step % config.PRINT_STEP_FREQUENCY == 0 or step == len(test_loader)-1:
                     print(
                         datetime.now(),
-                        "Valid: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
+                        "Test: [{:2d}/{}] Step {:03d}/{:03d} Loss {losses.avg:.3f} "
                         "Prec@(1,5) ({top1.avg:.1%}, {top5.avg:.1%})".format(
-                            epoch+1, epochs, step, len(valid_loader)-1, losses=losses,
+                            epoch+1, epochs, step, len(test_loader)-1, losses=losses,
                             top1=top1, top5=top5))
  
-        self.writer.add_scalar('val/loss', losses.avg, cur_step)
-        self.writer.add_scalar('val/top1', top1.avg, cur_step)
-        self.writer.add_scalar('val/top5', top5.avg, cur_step)
+        self.writer.add_scalar('test/loss', losses.avg, cur_step)
+        self.writer.add_scalar('test/top1', top1.avg, cur_step)
+        self.writer.add_scalar('test/top5', top5.avg, cur_step)
 
-        print("Valid: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, epochs, top1.avg))
+        print("Test: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, epochs, top1.avg))
  
         return top1.avg
 
