@@ -17,7 +17,7 @@ from util import get_data, load_checkpoint, save_checkpoint, accuracy, AverageMe
  
 config = SearchConfig()
  
-class HDARTS:
+class MNAS:
     def __init__(self):
         if config.LOAD_FROM_CHECKPOINT is None:
             self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
@@ -349,5 +349,5 @@ class HDARTS:
 if __name__ == "__main__":
     if not torch.cuda.is_available():
         print('No GPU Available')
-    nas = HDARTS()
+    nas = MNAS()
     nas.run()

@@ -35,7 +35,7 @@ class BetaVAE(nn.Module):
         self.test_mode = test_mode
 
         '''
-        Encoder: Top-Level DAG of HDARTS used here
+        Encoder: Top-Level DAG of MNAS used here
         '''
         # Dict from edge tuple to MixedOperation on that edge
         self.encoder = HierarchicalOperation.create_dag(

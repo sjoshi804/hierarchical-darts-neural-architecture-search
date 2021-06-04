@@ -10,7 +10,7 @@ from operations import Zero
 
 class LegacyLearntModel(nn.Module):
     '''
-    - Extracts the final model learnt by HDARTS.
+    - Extracts the final model learnt by MNAS.
     - Uses weights learned during optimization to initialize the operations.
 
     This class takes in a Model object and converts it into a LegacyLearntModel which 

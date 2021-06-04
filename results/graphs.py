@@ -33,7 +33,7 @@ def smoothen(data, window):
 
 def createGraph(
   arrayOfPlots,
-  title="HDARTS v/s DARTS",
+  title="MNAS v/s DARTS",
   xlabel="GPU Time (minutes)", 
   ylabel="Top 1 Training Accuracy (%)",
   transparency_factor=0.8, 
@@ -71,17 +71,17 @@ def processTBCSVData(csv_url, plot_label, plot_color='red'):
           'plot_label': plot_label}
 
 # Upload csv to github and link raw file here
-train_loss_alpha_01_hdarts_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/hdarts_alpha_lr_.01/run-Alpha_LR_01_13-12-2020--18-25-39-tag-train_loss.csv'
-train_loss_01_alpha_hdarts = processTBCSVData(csv_url=train_loss_alpha_01_hdarts_url, plot_label='HDarts Alpha LR=0.01', plot_color='green')
+train_loss_alpha_01_MNAS_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/MNAS_alpha_lr_.01/run-Alpha_LR_01_13-12-2020--18-25-39-tag-train_loss.csv'
+train_loss_01_alpha_MNAS = processTBCSVData(csv_url=train_loss_alpha_01_MNAS_url, plot_label='MNAS Alpha LR=0.01', plot_color='green')
 
 
-train_loss_alpha_05_hdarts_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/hdarts_alpha_lr_.05/run-Alpha_LR_05_13-12-2020--19-00-09-tag-train_loss.csv'
-train_loss_05_alpha_hdarts = processTBCSVData(csv_url=train_loss_alpha_05_hdarts_url, plot_label='HDarts Alpha LR=0.05', plot_color='purple')
+train_loss_alpha_05_MNAS_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/MNAS_alpha_lr_.05/run-Alpha_LR_05_13-12-2020--19-00-09-tag-train_loss.csv'
+train_loss_05_alpha_MNAS = processTBCSVData(csv_url=train_loss_alpha_05_MNAS_url, plot_label='MNAS Alpha LR=0.05', plot_color='purple')
 
 
-train_loss_alpha_1_hdarts_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/hdarts_alpha_lr_.1/run-Alpha_LR_%20.1_13-12-2020--19-47-16-tag-train_loss.csv'
-train_loss_1_alpha_hdarts = processTBCSVData(csv_url=train_loss_alpha_05_hdarts_url, plot_label='HDarts Alpha LR=0.1', plot_color='red')
+train_loss_alpha_1_MNAS_url = 'https://raw.githubusercontent.com/sjoshi804/hierarchical-darts-neural-architecture-search/main/results/MNAS_alpha_lr_.1/run-Alpha_LR_%20.1_13-12-2020--19-47-16-tag-train_loss.csv'
+train_loss_1_alpha_MNAS = processTBCSVData(csv_url=train_loss_alpha_05_MNAS_url, plot_label='MNAS Alpha LR=0.1', plot_color='red')
 
 
-createGraph(arrayOfPlots=[train_loss_01_alpha_hdarts, train_loss_05_alpha_hdarts, train_loss_1_alpha_hdarts])
+createGraph(arrayOfPlots=[train_loss_01_alpha_MNAS, train_loss_05_alpha_MNAS, train_loss_1_alpha_MNAS])
 

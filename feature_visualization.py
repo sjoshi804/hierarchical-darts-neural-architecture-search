@@ -46,7 +46,7 @@ print(util.get_model_layers(model))
 ''' Helper Functions'''
 
 def parse_layer(layer):
-    if "main_net" in layer: # FIXME: Need to change for HDARTS
+    if "main_net" in layer: # FIXME: Need to change for MNAS
         _, _, cell_num, _, edge, _ = tuple(layer.split("_"))
         return int(cell_num), edge
     else:

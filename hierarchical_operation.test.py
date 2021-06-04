@@ -15,7 +15,7 @@ class TestHierarchicalOperation(unittest.TestCase):
 
   def test_1level(self):
     '''
-    Testing hdarts with just 1 level.
+    Testing MNAS with just 1 level.
     Equivalent to darts in this case. Only Mixed Operations of primitives on nodes.
     Only tests base case of create_dag.
     '''

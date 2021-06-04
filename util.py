@@ -320,7 +320,7 @@ def det_cell_size(num_darts_nodes: int):
             num_ops[(n, m)] = (binom(m, 2) - 3) * binom(n, 2)
     sorted_keys = sorted(num_ops.keys(), key=lambda x: abs(num_ops_darts-num_ops[x]))
     print("DARTS ops", num_ops_darts)
-    print("Closest HDARTS Candidates")
+    print("Closest MNAS Candidates")
     for i in range(3):
         print("Level 0", sorted_keys[i][0], "Level 1", sorted_keys[i][1], "Num Ops", num_ops[sorted_keys[i]])
     return sorted_keys

@@ -33,7 +33,7 @@ ALPHA_WEIGHT_DECAY = 0.001
 ALPHA_LR = 0.0003
 ALPHA_MOMENTUM = (0.5, 0.999)
 
-# HDARTS Config
+# MNAS Config
 NUM_LEVELS = 2
 NUM_NODES_AT_LEVEL = { 0: 3, 1: 4 }
 NUM_OPS_AT_LEVEL = { 0: LEN_OPS, 1: 2}
@@ -85,7 +85,7 @@ class BaseConfig(argparse.Namespace):
 class SearchConfig(BaseConfig):
   def build_parser(self):
     parser = get_parser("Search config")
-    parser.add_argument('--name', default='HDARTS')
+    parser.add_argument('--name', default='MNAS')
     parser.add_argument('--datapath', default=DATAPATH)
     parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / cifar100')
     parser.add_argument('--num_levels', type=int, default=NUM_LEVELS)
@@ -143,7 +143,7 @@ class SearchConfig(BaseConfig):
 class TrainConfig(BaseConfig):
   def build_parser(self):
     parser = get_parser("Train config")
-    parser.add_argument('--name', default='HDARTS')
+    parser.add_argument('--name', default='MNAS')
     parser.add_argument('--datapath', default=DATAPATH)
     parser.add_argument('--dataset', default=DATASET, help='cifar10 / mnist / cifar100')
 

@@ -15,7 +15,7 @@ from util import get_data, save_checkpoint, AverageMeter, print_alpha
  
 config = SearchConfig()
  
-class VAEHDARTS:
+class VAEMNAS:
     def __init__(self):
         self.dt_string = datetime.now().strftime("%d-%m-%Y--%H-%M-%S")
         self.writer = SummaryWriter(config.LOGDIR + "/" + config.DATASET +  "/" + str(self.dt_string) + "/")
@@ -250,5 +250,5 @@ class VAEHDARTS:
 if __name__ == "__main__":
     if not torch.cuda.is_available():
         print('No GPU Available')
-    nas = VAEHDARTS()
+    nas = VAEMNAS()
     nas.run()

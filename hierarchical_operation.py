@@ -267,7 +267,7 @@ class HierarchicalOperation(nn.Module):
     
 
   @staticmethod
-  def hdarts_sparsification(dag, is_reduction, fraction_edges_to_skip_connect=0.5):
+  def MNAS_sparsification(dag, is_reduction, fraction_edges_to_skip_connect=0.5):
     num_to_skip = int(len(dag.keys()) * fraction_edges_to_skip_connect)
     already_skip = []
     for key in dag.keys():
