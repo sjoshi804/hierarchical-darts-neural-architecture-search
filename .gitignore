@@ -20,3 +20,4 @@ alpha_history
 experiments*.sh
 paperspace_jobs
 feature*.png
+.idea
