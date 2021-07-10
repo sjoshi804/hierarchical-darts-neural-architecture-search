@@ -80,11 +80,11 @@ class Train:
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
-                                                pin_memory=True)
+                                                pin_memory=config.PIN_MEMORY)
         test_loader = torch.utils.data.DataLoader(test_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
-                                                pin_memory=True)
+                                                pin_memory=config.PIN_MEMORY)
         
         # Create Model 
         print("Alpha Normal")

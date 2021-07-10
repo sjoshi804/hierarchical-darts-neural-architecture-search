@@ -46,6 +46,7 @@ NUM_DOWNLOAD_WORKERS = 4
 PRINT_STEP_FREQUENCY = 50
 PERCENTAGE_OF_DATA = 100
 CHECKPOINT_PATH = os.path.join(dir_path, "checkpoints_search")
+PIN_MEMORY = True
 
 def get_parser(name):
   """ make default formatted parser """
@@ -171,6 +172,7 @@ class TrainConfig(BaseConfig):
     parser.add_argument('--alpha_dir_path', help="Directory where the various alpha normal and alpha reduce are stored")
     parser.add_argument('--no_auxiliary', action='store_true', help="Disable auxiliary head")
     parser.add_argument('--seed', type=int, default=0, help="Randomness seed")
+    parser.add_argument('--pin_memory', type=bool, default=PIN_MEMORY, help="enable/disable page locking of memory")
     return parser
   
   def __init__(self):
