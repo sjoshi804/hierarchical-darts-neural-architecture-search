@@ -2,12 +2,14 @@
 from datetime import datetime
 from pprint import pprint
 from torch.utils.tensorboard.writer import SummaryWriter
+from torch.utils.data import Subset
 import os
 import random
 import signal
 import sys
 import torch 
 import torch.nn as nn
+import numpy as np
 
 # Internal Imports
 from config import TrainConfig
@@ -64,14 +66,22 @@ class Train:
         if config.PERCENTAGE_OF_DATA < 100:
             n_train = (n_train // 100) * config.PERCENTAGE_OF_DATA
             n_test = (n_test // 100) * config.PERCENTAGE_OF_DATA
+
+            '''
             train_data = train_data[:n_train]
             test_data = test_data[:n_test]
+            test_data = test_data[:n_test]
+            '''
+            # take a random sample of the indices
+            train_data = Subset(train_data, np.random.choice(range(len(train_data)), size=n_train, replace=False))
+            test_data = Subset(test_data, np.random.choice(range(len(test_data)), size=n_test, replace=False))
+
         
         train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
-        test_loader = torch.utils.data.DataLoader(train_data,
+        test_loader = torch.utils.data.DataLoader(test_data,
                                                 batch_size=config.BATCH_SIZE,
                                                 num_workers=config.NUM_DOWNLOAD_WORKERS,
                                                 pin_memory=True)
