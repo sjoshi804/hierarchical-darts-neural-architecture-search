@@ -8,6 +8,7 @@ import signal
 import sys
 import torch 
 import torch.nn as nn
+import numpy as np
 
 # Internal Imports
 from config import TrainConfig
@@ -47,6 +48,8 @@ class Train:
 
         # Seed for reproducibility
         torch.manual_seed(config.SEED)
+        torch.cuda.manual_seed(config.SEED)
+        np.random.seed(config.SEED)
         random.seed(config.SEED)
 
 

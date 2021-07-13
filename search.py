@@ -1,5 +1,6 @@
 # External Imports
 from datetime import datetime
+import numpy as np
 import os
 import pprint
 import random
@@ -43,6 +44,8 @@ class MNAS:
 
         # Seed for reproducibility
         torch.manual_seed(config.SEED)
+        torch.cuda.manual_seed(config.SEED)
+        np.random.seed(config.SEED)
         random.seed(config.SEED)
 
     def run(self):
