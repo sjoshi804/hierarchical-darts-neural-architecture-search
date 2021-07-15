@@ -14,6 +14,7 @@ import pickle
 import shutil
 import sys
 import torch
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from torch.autograd import Variable
 import torchvision.datasets as dset
@@ -354,3 +355,12 @@ def print_cell_param_size(model, cell_num):
     for key in model[cell_num].ops.keys():
         print("Cell " + str(cell_num) + ": # of Parameters " + key + ": " + str(type(model[cell_num].ops[key])) + " (M)", count_parameters_in_millions(model[cell_num].ops[key]))
     print("Cell " + str(cell_num) + ": # of Parameters (M)", count_parameters_in_millions(model[cell_num]))
+
+# applies the gumbel softmax on a tensor of logits
+# epsilon is stability constant
+# requires a random sample
+def gumbel_softmax(alphas, temp, epsilon=1e-4):
+    log_probs = torch.log(torch.max(alphas, torch.ones_like(alphas) * epsilon))
+    gumbel = -torch.log(-torch.log(torch.zeros_like(alphas).uniform_()))
+    z = (log_probs + gumbel) / temp
+    return F.softmax(z, dim=-1)
