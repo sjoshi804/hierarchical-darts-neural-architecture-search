@@ -71,12 +71,12 @@ class ModelController(nn.Module):
         if not test_mode and torch.cuda.is_available():
             self.model = self.model.cuda()
 
-    def forward(self, x):
+    def forward(self, x, temp=None):
         if self.test_mode and not self.graph_added: 
             # Visualize model in tensorboard
             self.writer.add_graph(self.model, x)
             self.graph_added = True
-        return self.model(x)
+        return self.model(x, temp=temp)
 
     # Get loss object using loss_criterion
     def loss(self, X, y):

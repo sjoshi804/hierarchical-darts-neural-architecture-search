@@ -364,3 +364,21 @@ def gumbel_softmax(alphas, temp, epsilon=1e-4):
     gumbel = -torch.log(-torch.log(torch.zeros_like(alphas).uniform_()))
     z = (log_probs + gumbel) / temp
     return F.softmax(z, dim=-1)
+
+# A scheduler for the temperature of the gumbel softmax
+# linearly decreases the temperature down from the initial temp to the min temp over the course of the number of epochs
+# also possible to start from an epoch part of the way through
+class LinearTempScheduler:
+    def __init__(self, n_epochs: int, starting_temp: float, final_temp: float, current_epoch=0):
+        self.n_epochs = n_epochs
+        self.starting_temp = starting_temp
+        self.final_temp = final_temp
+        self.current_epoch = current_epoch
+
+    def step(self):
+        temp = self.get_temp()
+        self.current_epoch += 1
+        return temp
+
+    def get_temp(self):
+        return self.starting_temp + (self.current_epoch / self.n_epochs) * (self.final_temp - self.starting_temp)
