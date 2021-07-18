@@ -2,6 +2,7 @@ from torch.nn.modules.batchnorm import BatchNorm2d
 from operations import Zero
 import torch.nn as nn
 import torch.nn.functional as F
+from util import gumbel_softmax
 
 class MixedOperation(nn.Module):
   '''
@@ -31,11 +32,17 @@ class MixedOperation(nn.Module):
           BatchNorm2d(self.ops[i].channels_out, affine=False)
         )
 
-  def forward(self, x, op_num=0):
+  def forward(self, x, op_num=0,  temp=None):
     '''
     Linear combination of operations scaled by self.weights i.e softmax of the architecture parameters
     '''
-    if len(self.ops) == 1:
-      return sum([w * self.ops[0].forward(x, op_num=op_num) for op_num, w in enumerate(F.softmax(self.alpha_e[0], dim=-1))])
+    if temp is not None:
+      if len(self.ops) == 1:
+        return sum([w * self.ops[0].forward(x, op_num=op_num) for op_num, w in enumerate(gumbel_softmax(self.alpha_e[0], temp))])
+      else:
+        return sum(w * op(x) for w, op in zip(gumbel_softmax(self.alpha_e[op_num], temp), self.ops))
     else:
-      return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e[op_num], dim=-1), self.ops))
+      if len(self.ops) == 1:
+        return sum([w * self.ops[0].forward(x, op_num=op_num) for op_num, w in enumerate(F.softmax(self.alpha_e[0], dim=-1))])
+      else:
+        return sum(w * op(x) for w, op in zip(F.softmax(self.alpha_e[op_num], dim=-1), self.ops))

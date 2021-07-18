@@ -13,7 +13,7 @@ from config import SearchConfig
 from model_controller import ModelController
 from operations import OPS, LEN_OPS
 from torch.utils.tensorboard import SummaryWriter
-from util import get_data, load_checkpoint, save_checkpoint, accuracy, AverageMeter, print_alpha
+from util import get_data, load_checkpoint, save_checkpoint, accuracy, AverageMeter, print_alpha, LinearTempScheduler
  
 config = SearchConfig()
  
@@ -51,7 +51,7 @@ class MNAS:
             dataset_name=config.DATASET,
             data_path=config.DATAPATH,
             cutout_length=16,
-            validation=False)
+            test=False)
  
         # Set Loss Criterion
         loss_criterion = nn.CrossEntropyLoss()
@@ -113,7 +113,14 @@ class MNAS:
             lr=config.WEIGHTS_LR,
             momentum=config.WEIGHTS_MOMENTUM,
             weight_decay=config.WEIGHTS_WEIGHT_DECAY)
-        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.EPOCHS, eta_min=config.WEIGHTS_LR_MIN) 
+        w_lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(w_optim, config.EPOCHS, eta_min=config.WEIGHTS_LR_MIN)
+
+        # gumbel softmax temperature scheduler
+        temp_scheduler = None
+        if config.USE_GUMBEL_SOFTMAX:
+            temp_scheduler = LinearTempScheduler(n_epochs=config.EPOCHS,
+                                             starting_temp=config.ALPHA_STARTING_TEMP,
+                                             final_temp=config.ALPHA_MIN_TEMP)
  
 
         # Alpha Optimizer - one for each level
@@ -143,6 +150,11 @@ class MNAS:
             lr = w_lr_scheduler.get_lr()[0]
             print("W Learning Rate:", lr)
 
+            # Attemp to get temperature and step temp scheduler
+            temp = None
+            if temp_scheduler is not None:
+                temp = temp_scheduler.step()
+
             # Put into weight training mode - turn off gradient for alpha
             self.model.weight_training_mode()
             
@@ -152,7 +164,8 @@ class MNAS:
                 model=self.model,
                 w_optim=w_optim,
                 epoch=epoch,
-                lr=lr)
+                lr=lr,
+                temp=temp)
 
             # GPU Memory Allocated for Model in Weight Sharing Phase   
             if epoch == 0:
@@ -170,7 +183,8 @@ class MNAS:
                 model=self.model,
                 alpha_optim=alpha_optim,
                 epoch=epoch,
-                lr=lr)
+                lr=lr,
+                temp=temp)
 
             # Save Checkpoint
             if best_top1 < top1:
@@ -197,7 +211,7 @@ class MNAS:
         # Terminate
         self.terminate()
  
-    def train_weights(self, train_loader, model: ModelController, w_optim, epoch, lr):
+    def train_weights(self, train_loader, model: ModelController, w_optim, epoch, lr, temp=None):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
@@ -218,7 +232,7 @@ class MNAS:
 
             # Weights Step
             w_optim.zero_grad()
-            logits = model(trn_X)
+            logits = model(trn_X, temp=temp)
             loss = model.loss_criterion(logits, trn_y)
             loss.backward()
 
@@ -246,7 +260,7 @@ class MNAS:
  
         print("Weight Train: [{:2d}/{}] Final Prec@1 {:.4%}".format(epoch+1, config.EPOCHS, top1.avg))
 
-    def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr):
+    def train_alpha(self, valid_loader, model: ModelController, alpha_optim, epoch, lr, temp=None):
         top1 = AverageMeter()
         top5 = AverageMeter()
         losses = AverageMeter()
@@ -268,7 +282,7 @@ class MNAS:
             # Alpha Gradient Steps for each level
             for level in range(len(alpha_optim)):
                 alpha_optim[level].zero_grad()
-            logits = model(val_X)
+            logits = model(val_X, temp=temp)
             loss = model.loss_criterion(logits, val_y)
             loss.backward()
             for level in range(len(alpha_optim)):

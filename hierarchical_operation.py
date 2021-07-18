@@ -52,7 +52,7 @@ class HierarchicalOperation(nn.Module):
     # Channels Out
     self.channels_out = channels_in * (num_nodes - 3) if concatenate_output else channels_in
 
-  def forward(self, x, x2=None, op_num=0):
+  def forward(self, x, x2=None, op_num=0, temp=None):
     '''
     Iteratively compute using each edge of the dag
     '''
@@ -93,7 +93,7 @@ class HierarchicalOperation(nn.Module):
         elif edge not in self.ops: # if edge removed in sparsification, skip
           continue
         elif isinstance(self.ops[edge], MixedOperation):
-          output[edge] = self.ops[edge].forward(input, op_num=op_num)
+          output[edge] = self.ops[edge].forward(input, op_num=op_num, temp=temp)
         else:
           # If not at top level maybe drop path, else don't
           if self.learnt_op and (self.darts_sim or type(x2) == type(None)) and not isinstance(self.ops[edge], Identity): 

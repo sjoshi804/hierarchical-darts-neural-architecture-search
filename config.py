@@ -32,6 +32,9 @@ BATCH_SIZE = 32
 ALPHA_WEIGHT_DECAY = 0.001
 ALPHA_LR = 0.0003
 ALPHA_MOMENTUM = (0.5, 0.999)
+ALPHA_STARTING_TEMP = 1
+ALPHA_MIN_TEMP = 0.33
+ALPHA_USE_GUMBEL = False
 
 # MNAS Config
 NUM_LEVELS = 2
@@ -104,6 +107,9 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--alpha_lr', type=eval, default=[ALPHA_LR,ALPHA_LR], help='list of lr for alpha')
     parser.add_argument('--alpha_weight_decay', type=float, default=ALPHA_WEIGHT_DECAY, help='weight decay for alpha architecture')
     parser.add_argument('--alpha_momentum', type=eval, default=ALPHA_MOMENTUM, help='betas (momentum) for alpha architecture adam optimizer')
+    parser.add_argument('--alpha_starting_temp', type=float, default=ALPHA_STARTING_TEMP, help='initial temperature for gumbel softmax')
+    parser.add_argument('--alpha_min_temp', type=float, default=ALPHA_MIN_TEMP, help='minimum temperature for gumbel softmax')
+    parser.add_argument('--use_gumbel_softmax', action='store_true', default=ALPHA_USE_GUMBEL, help='enable gumbel softmax for mixed operations')
 
     parser.add_argument('--weights_lr', type=float, default=WEIGHTS_LR, help='lr for weights')
     parser.add_argument('--weights_lr_min', type=float, default=WEIGHTS_LR_MIN, help='minimum lr for weights')
