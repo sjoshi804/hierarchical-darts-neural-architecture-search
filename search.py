@@ -150,13 +150,10 @@ class MNAS:
             lr = w_lr_scheduler.get_lr()[0]
             print("W Learning Rate:", lr)
 
-            # potentially get temperature and step temp scheduler
+            # Attemp to get temperature and step temp scheduler
             temp = None
             if temp_scheduler is not None:
                 temp = temp_scheduler.step()
-
-            #TODO: REMOVE THIS!
-            print(temp)
 
             # Put into weight training mode - turn off gradient for alpha
             self.model.weight_training_mode()

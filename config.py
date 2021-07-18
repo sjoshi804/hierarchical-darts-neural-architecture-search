@@ -109,7 +109,7 @@ class SearchConfig(BaseConfig):
     parser.add_argument('--alpha_momentum', type=eval, default=ALPHA_MOMENTUM, help='betas (momentum) for alpha architecture adam optimizer')
     parser.add_argument('--alpha_starting_temp', type=float, default=ALPHA_STARTING_TEMP, help='initial temperature for gumbel softmax')
     parser.add_argument('--alpha_min_temp', type=float, default=ALPHA_MIN_TEMP, help='minimum temperature for gumbel softmax')
-    parser.add_argument('--use_gumbel_softmax', type=bool, default=ALPHA_USE_GUMBEL, help='enable gumbel softmax for mixed operations')
+    parser.add_argument('--use_gumbel_softmax', action='store_true', default=ALPHA_USE_GUMBEL, help='enable gumbel softmax for mixed operations')
 
     parser.add_argument('--weights_lr', type=float, default=WEIGHTS_LR, help='lr for weights')
     parser.add_argument('--weights_lr_min', type=float, default=WEIGHTS_LR_MIN, help='minimum lr for weights')

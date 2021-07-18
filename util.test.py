@@ -8,25 +8,34 @@ import numpy as np
 
 class MyTestCase(unittest.TestCase):
     def test_gumbel_softmax(self):
-        temps = [0.1, 1, 5, 10]
-        vec = torch.Tensor([2, 5])
+        temps = [0.01, 0.33, 1, 10]
+        original_dist = torch.Tensor([0.2, 0.8])
         n_trials = 100
-        temp_freqs = np.zeros((len(temps), len(vec)))
-        for i, temp in enumerate(temps):
-            inds = torch.argmax(gumbel_softmax(vec.repeat(n_trials, 1), temp), dim=-1)
-            temp_freqs[i] = (torch.sum(torch.eye(len(vec))[inds], dim=0) / n_trials).numpy()
+        data = []
 
-        print(temp_freqs[0])
+        for temp in temps:
+            sample = []
+            for _ in range(n_trials):
+                gumbel_dist = torch.distributions.Categorical(gumbel_softmax(original_dist, temp))
+                for _ in range(100):
+                    sample.append(int(gumbel_dist.sample()))
+            data.append(sample)
 
         # plot the results
-        fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
-        for i, ax in enumerate(axs.flat):
-            ax.bar(vec, temp_freqs[i])
-            ax.set_title(f"temp = {temps[i]}")
-            ax.set_ylabel("frequency")
-            ax.set_xlabel("element value")
-        plt.show()
+        fig, axs = plt.subplots(2, 2)
+        for i in range(2):
+            for j in range(2):
+                axs[i][j].hist(data[i*2+j])
+                axs[i][j].set_title("Temp: " + str(temps[i*2+j]))        
+        # Labeling
+        for ax in axs.flat:
+            ax.set(xlabel='index chosen', ylabel='frequency')
 
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+        plt.show()
 
 
 if __name__ == '__main__':
